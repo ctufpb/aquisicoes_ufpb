@@ -40,7 +40,7 @@ export default {
 
 @'
 {
-  "name": "pregao-facil",
+  "name": "consulta-aquisicoes",
   "compatibility_date": "2026-05-15",
   "main": "index.js",
   "no_bundle": true,

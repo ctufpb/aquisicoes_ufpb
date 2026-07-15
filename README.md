@@ -1,20 +1,16 @@
-# Pregão Fácil
+# Consulta de Contratações e Aquisições
 
-PWA estática para montar links de consultas do Compras.gov.br, SIPAC e Portal da Transparência.
+PWA estática para consultas no ComprasNet, download de editais pelo PNCP, SIPAC e Portal da Transparência.
 
 ## Estrutura
 
-- `index.html`: estrutura da tela.
+- `index.html`: tela do aplicativo.
 - `style.css`: visual responsivo.
-- `app.js`: regras dos links e comportamento da interface.
+- `app.js`: links, favoritos e comportamento da interface.
 - `manifest.json`: instalação como aplicativo.
-- `service-worker.js`: funcionamento offline.
-- `uasgs.json`: base local de UASGs.
+- `service-worker.js`: cache para uso instalado.
+- `uasgs.json`: UASGs ativas e respectivos órgãos.
 - `icon-192.png` e `icon-512.png`: ícones.
-- `build.ps1`: prepara a publicação sem instalar dependências.
+- `build.ps1`: prepara a publicação.
 
 Não há login, backend, sincronização ou `node_modules`.
-
-## Rodar localmente
-
-Abra esta pasta em qualquer servidor estático e acesse `index.html`.
