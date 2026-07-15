@@ -1,0 +1,248 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta id="themeColor" name="theme-color" content="#102a43">
+  <meta name="description" content="Leitor contínuo de QR Code e código de barras.">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Alô Arquivo">
+  <title>Alô Arquivo</title>
+
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" type="image/svg+xml" href="icons/icon.svg">
+  <link rel="apple-touch-icon" href="icons/icon-192.png">
+  <link rel="stylesheet" href="styles.css?v=20260630.1">
+
+  <script defer src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+  <script defer src="logic.js?v=20260630.1"></script>
+  <script defer src="app.js?v=20260630.1"></script>
+</head>
+<body>
+  <header class="app-header">
+    <div class="brand">
+      <img src="icons/icon.svg" alt="" width="46" height="46">
+      <div>
+        <h1>Alô Arquivo</h1>
+        <p>Leitura rápida e contínua</p>
+      </div>
+    </div>
+    <div class="header-actions">
+      <button id="installButton" class="settings-button install-button" type="button" aria-label="Instalar aplicativo" title="Instalar aplicativo" hidden>
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M11 3h2v10.2l3.6-3.6L18 11l-6 6-6-6 1.4-1.4 3.6 3.6V3ZM5 19h14v2H5v-2Z"/></svg>
+      </button>
+      <button id="settingsButton" class="settings-button" type="button" aria-label="Abrir configurações" title="Configurações">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19.4 13a7.8 7.8 0 0 0 .1-1 7.8 7.8 0 0 0-.1-1l2.1-1.6-2-3.4L17 7a7.7 7.7 0 0 0-1.7-1L15 3h-4l-.4 3A7.7 7.7 0 0 0 9 7L6.4 6l-2 3.4L6.6 11a7.8 7.8 0 0 0-.1 1 7.8 7.8 0 0 0 .1 1l-2.1 1.6 2 3.4L9 17a7.7 7.7 0 0 0 1.7 1l.4 3h4l.4-3a7.7 7.7 0 0 0 1.7-1l2.6 1 2-3.4L19.4 13ZM13 15.5a3.5 3.5 0 1 1 0-7 3.5 3.5 0 0 1 0 7Z"/></svg>
+      </button>
+    </div>
+  </header>
+
+  <main class="app-shell">
+    <section class="card scanner-card" aria-labelledby="scannerTitle">
+      <div class="section-heading">
+        <div>
+          <span class="eyebrow">CÂMERA</span>
+          <h2 id="scannerTitle">Aponte e continue lendo</h2>
+        </div>
+        <span id="cameraStatus" class="status-pill status-idle">
+          <span class="status-dot" aria-hidden="true"></span>
+          <span id="cameraStatusText">Desligada</span>
+        </span>
+      </div>
+
+      <div id="cameraStage" class="camera-stage">
+        <div id="reader" aria-label="Visualização da câmera"></div>
+        <div id="cameraPlaceholder" class="camera-placeholder">
+          <svg viewBox="0 0 64 64" aria-hidden="true">
+            <path d="M21 15h22l4 7h7a5 5 0 0 1 5 5v23a5 5 0 0 1-5 5H10a5 5 0 0 1-5-5V27a5 5 0 0 1 5-5h7l4-7Z"/>
+            <circle cx="32" cy="38" r="11"/>
+            <path d="M14 32v-4h4M50 32v-4h-4M14 44v4h4M50 44v4h-4"/>
+          </svg>
+          <strong>Câmera pronta para começar</strong>
+          <span>QR Code e códigos de barras</span>
+        </div>
+        <div class="scan-guide" aria-hidden="true"><span></span></div>
+        <div id="scanFeedback" class="scan-feedback" aria-live="polite">
+          <span id="feedbackIcon" class="feedback-icon">✓</span>
+          <strong id="feedbackTitle">Leitura salva</strong>
+          <small id="feedbackValue"></small>
+        </div>
+      </div>
+
+      <p id="cameraHelp" class="camera-help">A câmera permanece aberta. Basta mostrar um código depois do outro.</p>
+
+      <div class="camera-actions">
+        <button id="startButton" class="button button-primary start-button" type="button" style="flex:1 1 0;min-width:0">
+          <span class="button-content">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 4 7.2 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3.2L15 4H9Zm3 13.2A4.2 4.2 0 1 1 12 8.8a4.2 4.2 0 0 1 0 8.4Z"/></svg>
+            <span id="startButtonText">Iniciar câmera</span>
+          </span>
+        </button>
+        <button id="scanModeButton" class="button button-secondary mode-button" type="button" aria-label="Mudar tipo de leitura" style="flex:0 0 112px;width:112px;min-width:112px;max-width:112px">
+          <span class="button-content">
+            <svg class="mode-icon" viewBox="0 0 24 24" aria-hidden="true"><path id="scanModeIconPath" d="M3 3h7v7H3V3Zm2 2v3h3V5H5Zm9-2h7v7h-7V3Zm2 2v3h3V5h-3ZM3 14h7v7H3v-7Zm2 2v3h3v-3H5Zm9-2h3v3h-3v-3Zm4 0h3v7h-3v-7Zm-4 4h3v3h-3v-3Z"/></svg>
+            <span id="scanModeText">QR Code</span>
+          </span>
+        </button>
+        <button id="torchButton" class="button button-secondary torch-button is-hidden" type="button" aria-label="Ligar lanterna" aria-pressed="false">
+          <span class="button-content">
+            <span class="torch-emoji" aria-hidden="true">🔦</span>
+            <span id="torchState" class="torch-state">OFF</span>
+          </span>
+        </button>
+      </div>
+    </section>
+
+    <section class="card list-card" aria-labelledby="listTitle">
+      <div class="section-heading list-heading">
+        <div class="editable-title-wrap">
+          <div class="editable-title-row">
+            <h2 id="listTitle">Lista</h2>
+            <button id="editTitleButton" class="edit-title-button" type="button" aria-label="Editar nome da lista" title="Editar nome da lista">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15.7 5.3 3 3L8.9 18H6v-2.9l9.7-9.8Zm2.1-2.1a1.4 1.4 0 0 1 2 0l1 1a1.4 1.4 0 0 1 0 2l-1.1 1.1-3-3 1.1-1.1Z"/></svg>
+            </button>
+          </div>
+        </div>
+        <label class="type-counter" aria-label="Tipo e quantidade de itens">
+          <select id="itemType">
+            <option value="processos">Processos</option>
+            <option value="documentos">Documentos</option>
+          </select>
+          <strong id="listCount">0</strong>
+        </label>
+      </div>
+
+      <div id="emptyState" class="empty-state">
+        <div class="empty-icon" aria-hidden="true">#</div>
+        <strong>Nenhuma leitura ainda</strong>
+        <p>Os códigos aparecerão aqui, na ordem em que forem lidos.</p>
+      </div>
+
+      <ol id="codeList" class="code-list" aria-live="polite" aria-label="Códigos lidos"></ol>
+    </section>
+  </main>
+
+  <footer class="action-bar">
+    <div class="action-bar-inner">
+      <button id="clearButton" class="button button-ghost" type="button" disabled>
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 3h8l1 2h4v2H3V5h4l1-2Zm-2 6h12l-1 12H7L6 9Zm4 2v8h2v-8h-2Zm4 0v8h2v-8h-2Z"/></svg>
+        Limpar
+      </button>
+      <button id="shareButton" class="button button-share" type="button" disabled>
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 16a3 3 0 0 0-2.4 1.2l-6.7-3.8a3 3 0 0 0 0-2.8l6.7-3.8A3 3 0 1 0 15 5a3 3 0 0 0 .1.7L8.4 9.5a3 3 0 1 0 0 5l6.7 3.8A3 3 0 1 0 18 16Z"/></svg>
+        Compartilhar lista
+      </button>
+    </div>
+  </footer>
+
+  <dialog id="clearDialog" class="confirm-dialog">
+    <form method="dialog">
+      <div class="dialog-icon" aria-hidden="true">!</div>
+      <h2>Limpar toda a lista?</h2>
+      <p>Essa ação remove todas as leituras deste aparelho.</p>
+      <div class="dialog-actions">
+        <button class="button button-secondary" value="cancel">Cancelar</button>
+        <button id="confirmClearButton" class="button button-danger" value="confirm">Sim, limpar</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="titleDialog" class="confirm-dialog title-dialog">
+    <form id="titleForm" method="dialog">
+      <div class="dialog-icon dialog-pencil" aria-hidden="true">
+        <svg viewBox="0 0 24 24"><path d="m15.7 5.3 3 3L8.9 18H6v-2.9l9.7-9.8Zm2.1-2.1a1.4 1.4 0 0 1 2 0l1 1a1.4 1.4 0 0 1 0 2l-1.1 1.1-3-3 1.1-1.1Z"/></svg>
+      </div>
+      <h2>Nome da lista</h2>
+      <p>Este nome também aparecerá no texto compartilhado.</p>
+      <input id="listNameInput" class="dialog-input" type="text" maxlength="40" autocomplete="off" placeholder="Ex.: Caixa 10">
+      <div class="dialog-actions">
+        <button class="button button-secondary" value="cancel">Cancelar</button>
+        <button id="saveTitleButton" class="button button-primary" value="save">Salvar</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="settingsDialog" class="settings-dialog">
+    <form method="dialog">
+      <div class="settings-heading">
+        <div>
+          <span class="eyebrow">PREFERÊNCIAS</span>
+          <h2>Configurações</h2>
+        </div>
+        <button class="dialog-close" value="close" aria-label="Fechar configurações">×</button>
+      </div>
+
+      <fieldset class="theme-fieldset">
+        <legend>Tema do aplicativo</legend>
+        <div class="theme-grid">
+          <label class="theme-option theme-preview-default">
+            <input type="radio" name="theme" value="default">
+            <span class="theme-swatch"><i></i></span>
+            <strong>Padrão</strong>
+          </label>
+          <label class="theme-option theme-preview-pink">
+            <input type="radio" name="theme" value="pink">
+            <span class="theme-swatch"><i></i></span>
+            <strong>Rosa</strong>
+          </label>
+          <label class="theme-option theme-preview-blue">
+            <input type="radio" name="theme" value="blue">
+            <span class="theme-swatch"><i></i></span>
+            <strong>Azul</strong>
+          </label>
+          <label class="theme-option theme-preview-purple">
+            <input type="radio" name="theme" value="purple">
+            <span class="theme-swatch"><i></i></span>
+            <strong>Roxo</strong>
+          </label>
+          <label class="theme-option theme-preview-sunset">
+            <input type="radio" name="theme" value="sunset">
+            <span class="theme-swatch"><i></i></span>
+            <strong>Solar</strong>
+          </label>
+          <label class="theme-option theme-preview-glass">
+            <input type="radio" name="theme" value="glass">
+            <span class="theme-swatch"><i></i></span>
+            <strong>Vitrificado</strong>
+          </label>
+        </div>
+      </fieldset>
+
+      <div class="setting-toggle-row">
+        <div>
+          <strong>NUP Padrão UFPB</strong>
+          <span>Começa com 23074 e possui 17 dígitos</span>
+        </div>
+        <label class="switch">
+          <input id="nupValidationToggle" type="checkbox">
+          <span class="switch-track" aria-hidden="true"></span>
+        </label>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="nupErrorDialog" class="confirm-dialog nup-error-dialog">
+    <form method="dialog">
+      <div class="dialog-icon nup-error-icon" aria-hidden="true">!</div>
+      <h2>NUP Padrão UFPB não encontrado</h2>
+      <p>O número precisa começar com <strong>23074</strong> e possuir <strong>17 dígitos</strong>.</p>
+      <p id="nupErrorTip" class="nup-error-tip">Se o erro persistir, tente ler o código de barras.</p>
+      <button id="nupErrorOkButton" class="button button-primary nup-ok-button" value="ok">OK, entendi</button>
+    </form>
+  </dialog>
+
+  <dialog id="installHelpDialog" class="confirm-dialog install-help-dialog">
+    <form method="dialog">
+      <div class="dialog-icon install-help-icon" aria-hidden="true">⇩</div>
+      <h2>Instalar Alô Arquivo</h2>
+      <p>No iPhone ou iPad, toque em <strong>Compartilhar</strong> no navegador e depois em <strong>Adicionar à Tela de Início</strong>.</p>
+      <button class="button button-primary nup-ok-button" value="ok">OK, entendi</button>
+    </form>
+  </dialog>
+
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+  <noscript>Ative o JavaScript para usar o leitor.</noscript>
+</body>
+</html>
