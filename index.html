@@ -59,7 +59,7 @@
             </label>
             <label class="field compact-field">
               <span>Ano</span>
-              <input id="yearInput" inputmode="numeric" minlength="4" maxlength="4" pattern="[0-9]{4}" value="2024" />
+              <input id="yearInput" inputmode="numeric" minlength="4" maxlength="4" pattern="[0-9]{4}" value="2026" />
             </label>
             <label class="field compact-field" id="itemField">
               <span>Item <small class="optional-label">(opcional)</small></span>
@@ -111,24 +111,24 @@
             </div>
             <div class="tool-card-body">
               <div class="inline-fields">
-                <label class="field"><span>Requisição</span><input id="sipacRequestInput" inputmode="numeric" value="6042" /></label>
+                <label class="field"><span>Requisição</span><input id="sipacRequestInput" inputmode="numeric" value="123" /></label>
                 <label class="field year-field"><span>Ano</span><input id="sipacYearInput" inputmode="numeric" value="2026" minlength="4" maxlength="4" pattern="[0-9]{4}" /></label>
                 <button id="sipacRequestBtn" type="button">Abrir <span>🔎</span></button>
               </div>
               <div class="inline-fields">
-                <label class="field"><span>Empenho</span><input id="sipacCommitmentInput" inputmode="numeric" value="801009" /></label>
+                <label class="field"><span>Empenho</span><input id="sipacCommitmentInput" inputmode="numeric" value="1234" /></label>
                 <label class="field year-field"><span>Ano</span><input id="sipacCommitmentYearInput" inputmode="numeric" value="2026" minlength="4" maxlength="4" pattern="[0-9]{4}" aria-describedby="sipacCommitmentAdvisory" /></label>
                 <button id="sipacCommitmentBtn" type="button">Abrir <span>🔎</span></button>
               </div>
               <p class="year-advisory" id="sipacCommitmentAdvisory" hidden></p>
               <div class="inline-fields">
-                <label class="field"><span class="long-field-label">Termo de responsabilidade</span><input id="sipacTermInput" inputmode="numeric" value="3069" /></label>
-                <label class="field year-field"><span>Ano</span><input id="sipacTermYearInput" inputmode="numeric" value="2025" minlength="4" maxlength="4" pattern="[0-9]{4}" /></label>
+                <label class="field"><span class="long-field-label">Termo de responsabilidade</span><input id="sipacTermInput" inputmode="numeric" value="123" /></label>
+                <label class="field year-field"><span>Ano</span><input id="sipacTermYearInput" inputmode="numeric" value="2026" minlength="4" maxlength="4" pattern="[0-9]{4}" /></label>
                 <button id="sipacTermBtn" type="button">Abrir <span>🔎</span></button>
               </div>
               <div class="inline-fields">
-                <label class="field"><span class="long-field-label">Guia de movimentação</span><input id="sipacGuideInput" inputmode="numeric" value="2450" /></label>
-                <label class="field year-field"><span>Ano</span><input id="sipacGuideYearInput" inputmode="numeric" value="2025" minlength="4" maxlength="4" pattern="[0-9]{4}" /></label>
+                <label class="field"><span class="long-field-label">Guia de movimentação</span><input id="sipacGuideInput" inputmode="numeric" value="123" /></label>
+                <label class="field year-field"><span>Ano</span><input id="sipacGuideYearInput" inputmode="numeric" value="2026" minlength="4" maxlength="4" pattern="[0-9]{4}" /></label>
                 <button id="sipacGuideBtn" type="button">Abrir <span>🔎</span></button>
               </div>
             </div>
@@ -142,7 +142,7 @@
               <div class="transparency-fields">
                 <label class="field"><span>Gestão</span><input id="managementInput" inputmode="numeric" value="15231" maxlength="5" /></label>
                 <label class="field"><span>Ano</span><input id="transparencyYearInput" inputmode="numeric" value="2026" minlength="4" maxlength="4" pattern="[0-9]{4}" aria-describedby="transparencyYearAdvisory" /></label>
-                <label class="field commitment-field"><span>Empenho</span><input id="commitmentInput" inputmode="numeric" value="801009" maxlength="6" /></label>
+                <label class="field commitment-field"><span>Empenho</span><input id="commitmentInput" inputmode="numeric" value="1234" maxlength="6" /></label>
                 <button class="wide-tool-button" id="transparencyBtn" type="button">Consultar empenho <span>🔎</span></button>
               </div>
               <p class="field-help" id="transparencyPreview"></p>
@@ -188,6 +188,6 @@
     </section>
   </div>
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
-  <script src="app.js?v=1.0.3-shared" defer></script>
+  <script src="app.js?v=1.0.3-keyboard" defer></script>
 </body>
 </html>

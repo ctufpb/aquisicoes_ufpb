@@ -2,12 +2,12 @@
   'use strict';
 
   const $ = id => document.getElementById(id);
-  const THIS_YEAR = new Date().getFullYear();
   const FORM_KEY = 'pregao-facil.form';
   const RECENT_KEY = 'pregao-facil.recent';
   const FAVORITES_KEY = 'pregao-facil.favorite-uasgs';
   const UFPB_CNPJ = '24098477000110';
   const SHARED_API_ORIGIN = 'https://pregao-facil-ufpb.lincolnpontes.chatgpt.site';
+  const DEFAULT_FORM_YEAR = '2026';
   const EMPENHO_WEB_START_YEAR = 2021;
   const CURRENT_PREGAO_START_YEAR = 2022;
   const CURRENT_ONLY_START_YEAR = 2024;
@@ -652,20 +652,42 @@
     const stored = readStored(FORM_KEY, {});
     fields.uasgInput.value = stored.uasgInput || '153065';
     fields.tender.value = stored.tender || '2';
-    fields.year.value = stored.year || String(THIS_YEAR);
+    fields.year.value = stored.year || DEFAULT_FORM_YEAR;
     fields.item.value = stored.item || '1';
-    fields.sipacRequest.value = stored.sipacRequest || '6042';
-    fields.sipacYear.value = stored.sipacYear || String(THIS_YEAR);
-    fields.sipacCommitment.value = stored.sipacCommitment || '801009';
-    fields.sipacCommitmentYear.value = stored.sipacCommitmentYear || String(THIS_YEAR);
-    fields.sipacTerm.value = stored.sipacTerm || '3069';
-    fields.sipacTermYear.value = stored.sipacTermYear || '2025';
-    fields.sipacGuide.value = stored.sipacGuide || '2450';
-    fields.sipacGuideYear.value = stored.sipacGuideYear || '2025';
+    fields.sipacRequest.value = stored.sipacRequest || '123';
+    fields.sipacYear.value = stored.sipacYear || DEFAULT_FORM_YEAR;
+    fields.sipacCommitment.value = stored.sipacCommitment || '1234';
+    fields.sipacCommitmentYear.value = stored.sipacCommitmentYear || DEFAULT_FORM_YEAR;
+    fields.sipacTerm.value = stored.sipacTerm || '123';
+    fields.sipacTermYear.value = stored.sipacTermYear || DEFAULT_FORM_YEAR;
+    fields.sipacGuide.value = stored.sipacGuide || '123';
+    fields.sipacGuideYear.value = stored.sipacGuideYear || DEFAULT_FORM_YEAR;
     fields.management.value = stored.management || '15231';
-    fields.transparencyYear.value = stored.transparencyYear || String(THIS_YEAR);
-    fields.commitment.value = stored.commitment || '801009';
+    fields.transparencyYear.value = stored.transparencyYear || DEFAULT_FORM_YEAR;
+    fields.commitment.value = stored.commitment || '1234';
     setMode(stored.mode);
+  }
+
+  function selectEditablePart(input) {
+    window.requestAnimationFrame(() => {
+      if (document.activeElement !== input) return;
+      const length = input.value.length;
+      if (yearFields.includes(input) && length > 0) {
+        input.setSelectionRange(length - 1, length);
+      } else {
+        input.select();
+      }
+    });
+  }
+
+  function bindEnter(inputs, action) {
+    for (const input of inputs) {
+      input.addEventListener('keydown', event => {
+        if (event.key !== 'Enter' || event.isComposing) return;
+        event.preventDefault();
+        action();
+      });
+    }
   }
 
   function validatePncpLink(event) {
@@ -681,7 +703,11 @@
   function bindEvents() {
     $('currentModeBtn').addEventListener('click', () => setMode('current'));
     $('legacyModeBtn').addEventListener('click', () => setMode('legacy'));
-    Object.values(fields).forEach(input => input.addEventListener('input', update));
+    Object.values(fields).forEach(input => {
+      input.addEventListener('input', update);
+      input.addEventListener('focus', () => selectEditablePart(input));
+      input.addEventListener('click', () => selectEditablePart(input));
+    });
     yearFields.forEach(field => field.addEventListener('input', () => {
       field.value = onlyDigits(field.value).slice(0, 4);
       update();
@@ -695,6 +721,20 @@
       $('uasgSuggestions').hidden = true;
       fields.uasgInput.setAttribute('aria-expanded', 'false');
     }, 140));
+
+    bindEnter([fields.uasgInput, fields.tender, fields.year], () => {
+      if (mode === 'current') $('purchaseBtn').click();
+      else document.querySelector('[data-legacy="ata"]')?.click();
+    });
+    bindEnter([fields.item], () => {
+      if (mode === 'current') $('itemBtn').click();
+      else document.querySelector('[data-legacy="ata"]')?.click();
+    });
+    bindEnter([fields.sipacRequest, fields.sipacYear], () => $('sipacRequestBtn').click());
+    bindEnter([fields.sipacCommitment, fields.sipacCommitmentYear], () => $('sipacCommitmentBtn').click());
+    bindEnter([fields.sipacTerm, fields.sipacTermYear], () => $('sipacTermBtn').click());
+    bindEnter([fields.sipacGuide, fields.sipacGuideYear], () => $('sipacGuideBtn').click());
+    bindEnter([fields.management, fields.transparencyYear, fields.commitment], () => $('transparencyBtn').click());
 
     $('purchaseBtn').addEventListener('click', () => {
       if (!requireFourDigitYear(fields.year)) return;
