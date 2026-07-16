@@ -11,7 +11,7 @@
   <link rel="manifest" href="manifest.json" />
   <link rel="icon" href="icon-192.png" type="image/png" />
   <link rel="apple-touch-icon" href="icon-192.png" />
-  <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="style.css?v=1.0.3-links" />
 </head>
 <body>
   <div class="app-shell">
@@ -30,7 +30,6 @@
           <div class="panel-heading">
             <div class="panel-title-lockup">
               <img class="comprasnet-brand" src="comprasgov.png" alt="Compras.gov.br" />
-              <h3>Consultar contratação</h3>
             </div>
             <div class="panel-heading-actions">
               <div class="mode-switch" aria-label="Tipo de consulta">
@@ -39,6 +38,8 @@
               </div>
             </div>
           </div>
+
+          <h3 class="consultation-title">Consultar contratação</h3>
 
           <div class="form-grid">
             <label class="field uasg-field">
@@ -67,9 +68,10 @@
 
           <div id="currentActions">
             <div class="primary-actions">
-              <button class="primary-button" id="purchaseBtn" type="button">Ver pregão <span>🔎</span></button>
+              <button class="primary-button purchase-button" id="purchaseBtn" type="button">Ver pregão <span>🔎</span></button>
               <button class="secondary-button" id="itemBtn" type="button">Ver item 1 <span>🔎</span></button>
               <button class="secondary-button notice-button" id="noticeBtn" type="button">Baixar edital <span>💾</span></button>
+              <button class="secondary-button srp-button" id="srpBtn" type="button">Itens de ata SRP <span>🔎</span></button>
             </div>
             <p class="download-status" id="noticeStatus">O edital será localizado automaticamente no PNCP.</p>
           </div>
@@ -82,8 +84,6 @@
             <div class="legacy-actions">
               <button type="button" data-legacy="ata"><span>Ata do pregão</span><b>🔎</b></button>
               <button type="button" data-legacy="edital"><span>Download do edital</span><b>🔎</b></button>
-              <button type="button" data-legacy="andamento"><span>Pregões em andamento</span><b>🔎</b></button>
-              <button type="button" data-legacy="agendados"><span>Pregões agendados</span><b>🔎</b></button>
               <button type="button" data-legacy="srp"><span>Itens de ata SRP</span><b>🔎</b></button>
             </div>
           </div>
@@ -183,6 +183,6 @@
     </section>
   </div>
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
-  <script src="app.js?v=1.0.3-permanent" defer></script>
+  <script src="app.js?v=1.0.3-links" defer></script>
 </body>
 </html>

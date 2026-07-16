@@ -104,13 +104,14 @@ h1, h2, h3, p { margin: 0; }
 .panel-heading h3 { font-size: 1.32rem; line-height: 1.2; letter-spacing: -0.025em; }
 .panel-heading-actions { display: grid; justify-items: end; }
 .comprasnet-brand { width: 178px; height: auto; object-fit: contain; }
+.consultation-title { margin-top: 18px; font-size: 1.32rem; line-height: 1.2; letter-spacing: -0.025em; }
 .compact-heading { align-items: center; }
 
 .mode-switch { display: inline-flex; padding: 4px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface-2); }
 .mode-switch button { min-height: 38px; padding: 0 14px; border: 0; border-radius: 9px; color: var(--muted); background: transparent; font-size: 0.84rem; font-weight: 850; }
 .mode-switch button.active { color: var(--brand-strong); background: #fff; box-shadow: 0 5px 14px rgba(28, 53, 47, 0.1); }
 
-.form-grid { display: grid; grid-template-columns: minmax(0, 1.65fr) minmax(135px, 0.62fr) 96px 82px; gap: 12px; margin-top: 24px; }
+.form-grid { display: grid; grid-template-columns: minmax(0, 1.65fr) minmax(135px, 0.62fr) 96px 82px; gap: 12px; margin-top: 14px; }
 .field { display: grid; align-content: start; gap: 8px; min-width: 0; color: #44544f; font-size: 0.86rem; font-weight: 850; }
 .field input {
   width: 100%;
@@ -159,6 +160,8 @@ h1, h2, h3, p { margin: 0; }
 .favorite-button.is-favorite { color: #c37b17; }
 
 .primary-actions { display: flex; flex-wrap: wrap; gap: 9px; margin-top: 20px; }
+.purchase-button { color: var(--brand-strong); border-color: #acd7cf; background: linear-gradient(135deg, #effaf7, #dff2ed); box-shadow: 0 8px 20px rgba(20, 123, 112, 0.11); }
+.purchase-button:hover { border-color: #7fc0b5; background: linear-gradient(135deg, #e8f8f4, #d3ece6); box-shadow: 0 12px 25px rgba(20, 123, 112, 0.16); }
 .secondary-button { color: var(--ink); border-color: var(--line); background: #fff; }
 .secondary-button:hover { border-color: #aebfba; transform: translateY(-2px); box-shadow: var(--shadow-sm); }
 .notice-button { color: #245592; border-color: #c4d6ec; background: #f4f8fd; }
@@ -211,7 +214,7 @@ h1, h2, h3, p { margin: 0; }
 .wide-tool-button { display: flex; align-items: center; justify-content: space-between; width: 100%; margin-top: auto; }
 .year-advisory { padding: 11px 13px; border: 1px solid #ecd19d; border-radius: 11px; color: #77480d; background: #fff8e9; font-size: 0.88rem; font-weight: 720; line-height: 1.45; }
 
-.quick-links-card { grid-column: 1 / -1; display: grid; grid-template-columns: 0.8fr 1.2fr; gap: 18px; }
+.quick-links-card { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; }
 .quick-links-card a { position: relative; display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: 18px; min-height: 158px; padding: 22px 58px 22px 22px; overflow: hidden; border: 1px solid var(--line); border-radius: var(--radius); background: #fff; box-shadow: var(--shadow-sm); transition: transform 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease; }
 .quick-links-card a:hover { transform: translateY(-3px); border-color: #a9c5bd; box-shadow: var(--shadow); }
 .quick-links-card .planning-link { border-color: #b8d5cd; background: linear-gradient(135deg, #f5fbf9 0%, #e9f5f1 64%, #e2f0ed 100%); }
@@ -243,7 +246,7 @@ h1, h2, h3, p { margin: 0; }
   .workspace-grid { grid-template-columns: 1fr; }
   .recent-panel { min-height: 170px; }
   .recent-list { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .quick-links-card { grid-template-columns: 0.9fr 1.1fr; }
+  .quick-links-card { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 
 @media (max-width: 760px) {
@@ -261,7 +264,7 @@ h1, h2, h3, p { margin: 0; }
   .uasg-field, .form-grid > .field:nth-child(2) { grid-column: 1 / -1; }
   .primary-actions { display: grid; grid-template-columns: 1fr 1fr; }
   .primary-actions button { width: 100%; padding: 0 10px; }
-  .notice-button { grid-column: 1 / -1; }
+  .notice-button { grid-column: auto; }
   .legacy-actions, .recent-list, .tools-grid, .quick-links-card { grid-template-columns: 1fr; }
   .service-art { height: 116px; }
   .quick-links-card { grid-column: auto; }

@@ -314,10 +314,8 @@
     const number = onlyDigits(fields.tender.value);
     const reference = `${number}${info.year}`;
     if (info.uasg.length !== 6 || !number || !info.year) return '';
-    if (kind === 'ata') return `http://comprasnet.gov.br/livre/Pregao/ata2.asp?co_no_uasg=${info.uasg}&numprp=${reference}`;
+    if (kind === 'ata') return `https://comprasnet.gov.br/livre/pregao/ata2.asp?co_no_uasg=${info.uasg}&numprp=${reference}&codigoModalidade=5`;
     if (kind === 'edital') return `http://comprasnet.gov.br/ConsultaLicitacoes/Download/Download.asp?coduasg=${info.uasg}&numprp=${reference}&modprp=5&bidbird=N`;
-    if (kind === 'andamento') return `http://comprasnet.gov.br/livre/Pregao/lista_pregao.asp?Opc=2&rdTpPregao=E&lstSrp=T&lstICMS=T&lstSituacao=5&uf=&numprp=0&co_uasg=${info.uasg}&dt_entrega=&dt_abertura=&lstTipoSuspensao=0`;
-    if (kind === 'agendados') return `http://comprasnet.gov.br/livre/Pregao/lista_pregao.asp?Opc=0&rdTpPregao=E&lstSrp=T&lstICMS=T&lstSituacao=5&uf=&numprp=0&co_uasg=${info.uasg}&dt_entrega=&dt_abertura=&lstTipoSuspensao=0`;
     return `https://www2.comprasnet.gov.br/siasgnet-atasrp/public/pesquisarItemSRP.do?method=iniciar&parametro.identificacaoCompra.numeroUasg=${info.uasg}&parametro.identificacaoCompra.modalidadeCompra=5&parametro.identificacaoCompra.numeroCompra=${number}&parametro.identificacaoCompra.anoCompra=${info.year}`;
   }
 
@@ -626,10 +624,15 @@
       openUrl(info.itemUrl, `${info.uasg} · PE ${info.tender}/${info.year} · item ${info.item}`);
     });
     $('noticeBtn').addEventListener('click', downloadCurrentNotice);
+    $('srpBtn').addEventListener('click', () => {
+      if (!requireFourDigitYear(fields.year)) return;
+      const info = purchaseInfo();
+      openUrl(legacyUrl('srp'), `Itens de ata SRP · ${info.uasg} · ${info.tender}/${info.year}`);
+    });
 
     document.querySelectorAll('[data-legacy]').forEach(button => button.addEventListener('click', () => {
       if (!requireFourDigitYear(fields.year)) return;
-      const labels = { ata: 'Ata do pregão', edital: 'Download do edital', andamento: 'Pregões em andamento', agendados: 'Pregões agendados', srp: 'Itens de ata SRP' };
+      const labels = { ata: 'Ata do pregão', edital: 'Download do edital', srp: 'Itens de ata SRP' };
       const kind = button.dataset.legacy;
       openUrl(legacyUrl(kind), `${labels[kind]} · ${purchaseInfo().uasg}`);
     }));
