@@ -11,14 +11,15 @@
   <link rel="manifest" href="manifest.json" />
   <link rel="icon" href="icon-192.png" type="image/png" />
   <link rel="apple-touch-icon" href="icon-192.png" />
-  <link rel="stylesheet" href="style.css?v=1.0.3-pncp" />
+  <link rel="stylesheet" href="style.css?v=1.0.3-classic" />
 </head>
 <body>
   <div class="app-shell">
     <header class="topbar">
-      <a class="brand-lockup" href="#inicio" aria-label="Ir para o início">
+      <div class="brand-lockup">
         <h1>Consulta de Contratações e Aquisições</h1>
-      </a>
+        <span class="app-version">v1.0</span>
+      </div>
       <button class="install-button" id="installBtn" type="button">
         <span aria-hidden="true">↓</span><span id="installLabel">Instalar app</span>
       </button>
@@ -61,18 +62,18 @@
               <input id="yearInput" inputmode="numeric" minlength="4" maxlength="4" pattern="[0-9]{4}" value="2024" />
             </label>
             <label class="field compact-field" id="itemField">
-              <span>Item</span>
+              <span>Item <small class="optional-label">(opcional)</small></span>
               <input id="itemInput" inputmode="numeric" value="1" />
             </label>
           </div>
 
           <div id="currentActions">
             <div class="primary-actions">
-              <button class="secondary-button pncp-page-button" id="pncpNoticeBtn" type="button">Edital <span>🔎</span></button>
+              <button class="secondary-button pncp-page-button pncp-notice-button" id="pncpNoticeBtn" type="button">Edital <span>🔎</span></button>
               <button class="secondary-button notice-button" id="noticeBtn" type="button">Baixar edital <span>💾</span></button>
-              <button class="secondary-button pncp-page-button" id="pncpAtaBtn" type="button">Ata <span>🔎</span></button>
+              <button class="secondary-button pncp-page-button pncp-ata-button" id="pncpAtaBtn" type="button">Ata <span>🔎</span></button>
               <button class="primary-button purchase-button" id="purchaseBtn" type="button">Contratação <span>🔎</span></button>
-              <button class="secondary-button" id="itemBtn" type="button">Ver item 1 <span>🔎</span></button>
+              <button class="secondary-button item-button" id="itemBtn" type="button">Ver item 1 <span>🔎</span></button>
               <button class="secondary-button srp-button" id="srpBtn" type="button">Itens de ata SRP <span>🔎</span></button>
             </div>
             <p class="download-status" id="noticeStatus">Os links do PNCP e o edital serão localizados automaticamente.</p>
@@ -185,6 +186,6 @@
     </section>
   </div>
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
-  <script src="app.js?v=1.0.3-pncp" defer></script>
+  <script src="app.js?v=1.0.3-classic" defer></script>
 </body>
 </html>

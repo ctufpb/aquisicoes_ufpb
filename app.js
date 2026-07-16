@@ -167,6 +167,15 @@
     window.open(url, '_blank', 'noopener,noreferrer');
   }
 
+  function navigateUrl(url, label) {
+    if (!url) {
+      showToast('Confira os campos da consulta.');
+      return;
+    }
+    remember(label, url);
+    window.location.assign(url);
+  }
+
   function update() {
     const info = purchaseInfo();
     for (const field of yearFields) {
@@ -309,6 +318,11 @@
     }
   }
 
+  function srpUrl(info, number) {
+    if (info.uasg.length !== 6 || !number || !info.year) return '';
+    return `https://www2.comprasnet.gov.br/siasgnet-atasrp/public/pesquisarItemSRP.do?method=iniciar&parametro.identificacaoCompra.numeroUasg=${info.uasg}&parametro.identificacaoCompra.modalidadeCompra=5&parametro.identificacaoCompra.numeroCompra=${number}&parametro.identificacaoCompra.anoCompra=${info.year}`;
+  }
+
   function legacyUrl(kind) {
     const info = purchaseInfo();
     const number = onlyDigits(fields.tender.value);
@@ -316,7 +330,7 @@
     if (info.uasg.length !== 6 || !number || !info.year) return '';
     if (kind === 'ata') return `https://comprasnet.gov.br/livre/pregao/ata2.asp?co_no_uasg=${info.uasg}&numprp=${reference}&codigoModalidade=5`;
     if (kind === 'edital') return `http://comprasnet.gov.br/ConsultaLicitacoes/Download/Download.asp?coduasg=${info.uasg}&numprp=${reference}&modprp=5&bidbird=N`;
-    return `https://www2.comprasnet.gov.br/siasgnet-atasrp/public/pesquisarItemSRP.do?method=iniciar&parametro.identificacaoCompra.numeroUasg=${info.uasg}&parametro.identificacaoCompra.modalidadeCompra=5&parametro.identificacaoCompra.numeroCompra=${number}&parametro.identificacaoCompra.anoCompra=${info.year}`;
+    return srpUrl(info, number);
   }
 
   function wait(milliseconds) {
@@ -597,7 +611,6 @@
       const links = await resolvePncpLinks(info, unit, isAta);
       const url = isAta ? links.ataUrl : links.editalUrl;
       const label = `${isAta ? 'Ata' : 'Edital'} PNCP · ${info.uasg} · ${info.tender}/${info.year}`;
-      openUrl(url, label);
       status.dataset.state = 'success';
       status.textContent = links.fromCache
         ? `${isAta ? 'Ata' : 'Edital'} recuperado do histórico compartilhado.`
@@ -605,6 +618,7 @@
           ? `${isAta ? 'Ata' : 'Edital'} localizado e salvo no histórico compartilhado.`
           : `${isAta ? 'Ata' : 'Edital'} localizado; o histórico compartilhado está temporariamente indisponível.`;
       showToast(`${isAta ? 'Ata' : 'Edital'} localizado no PNCP.`);
+      navigateUrl(url, label);
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Não foi possível localizar o link no PNCP.';
       status.dataset.state = error?.noticeState || 'access';
@@ -760,7 +774,7 @@
     $('srpBtn').addEventListener('click', () => {
       if (!requireFourDigitYear(fields.year)) return;
       const info = purchaseInfo();
-      openUrl(legacyUrl('srp'), `Itens de ata SRP · ${info.uasg} · ${info.tender}/${info.year}`);
+      openUrl(srpUrl(info, info.tender), `Itens de ata SRP · ${info.uasg} · ${info.tender}/${info.year}`);
     });
 
     document.querySelectorAll('[data-legacy]').forEach(button => button.addEventListener('click', () => {

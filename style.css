@@ -59,12 +59,28 @@ h1, h2, h3, p { margin: 0; }
   margin: -18px -22px 22px;
   padding: 15px 22px;
   border-bottom: 1px solid rgba(210, 224, 219, 0.85);
-  background: rgba(245, 249, 248, 0.86);
+  overflow: hidden;
+  background: linear-gradient(108deg, rgba(250, 252, 251, 0.97), rgba(236, 246, 242, 0.94));
   box-shadow: 0 8px 26px rgba(28, 53, 47, 0.04);
   backdrop-filter: blur(20px);
+  isolation: isolate;
 }
-.brand-lockup { min-width: 0; }
-.brand-lockup h1 { font-size: clamp(1.08rem, 2vw, 1.4rem); line-height: 1.2; letter-spacing: -0.035em; }
+.topbar::before {
+  content: "";
+  position: absolute;
+  z-index: 0;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(circle at 8% 135%, rgba(20, 123, 112, 0.13) 0 112px, transparent 113px),
+    radial-gradient(circle at 8% 135%, transparent 0 132px, rgba(20, 123, 112, 0.08) 133px 134px, transparent 135px),
+    linear-gradient(116deg, transparent 0 64%, rgba(46, 99, 170, 0.045) 64% 65%, transparent 65% 69%, rgba(184, 115, 18, 0.05) 69% 70%, transparent 70%);
+}
+.topbar > * { position: relative; z-index: 1; }
+.brand-lockup { display: flex; align-items: center; gap: 11px; min-width: 0; }
+.brand-lockup::before { content: ""; flex: 0 0 auto; width: 3px; height: 36px; border-radius: 999px; background: linear-gradient(180deg, #b68a43, var(--brand)); }
+.brand-lockup h1 { font-family: "Iowan Old Style", "Palatino Linotype", "Book Antiqua", Georgia, serif; font-size: clamp(1.16rem, 2.1vw, 1.52rem); font-weight: 700; line-height: 1.15; letter-spacing: -0.025em; }
+.app-version { flex: 0 0 auto; padding: 4px 7px; border: 1px solid rgba(176, 145, 87, 0.35); border-radius: 999px; color: #6b5938; background: rgba(255, 253, 248, 0.82); font-size: 0.63rem; font-weight: 850; letter-spacing: 0.045em; }
 .install-button, .primary-button, .secondary-button {
   display: inline-flex;
   align-items: center;
@@ -111,8 +127,9 @@ h1, h2, h3, p { margin: 0; }
 .mode-switch button { min-height: 38px; padding: 0 14px; border: 0; border-radius: 9px; color: var(--muted); background: transparent; font-size: 0.84rem; font-weight: 850; }
 .mode-switch button.active { color: var(--brand-strong); background: #fff; box-shadow: 0 5px 14px rgba(28, 53, 47, 0.1); }
 
-.form-grid { display: grid; grid-template-columns: minmax(0, 1.65fr) minmax(135px, 0.62fr) 96px 82px; gap: 12px; margin-top: 14px; }
+.form-grid { display: grid; grid-template-columns: minmax(0, 1.65fr) minmax(135px, 0.62fr) 96px 112px; gap: 12px; margin-top: 14px; }
 .field { display: grid; align-content: start; gap: 8px; min-width: 0; color: #44544f; font-size: 0.86rem; font-weight: 850; }
+.optional-label { color: var(--muted); font-size: 0.7rem; font-weight: 700; }
 .field input {
   width: 100%;
   min-height: var(--tap);
@@ -164,10 +181,16 @@ h1, h2, h3, p { margin: 0; }
 .purchase-button:hover { border-color: #7fc0b5; background: linear-gradient(135deg, #e8f8f4, #d3ece6); box-shadow: 0 12px 25px rgba(20, 123, 112, 0.16); }
 .secondary-button { color: var(--ink); border-color: var(--line); background: #fff; }
 .secondary-button:hover { border-color: #aebfba; transform: translateY(-2px); box-shadow: var(--shadow-sm); }
-.pncp-page-button { color: #255b83; border-color: #c7dceb; background: #f5f9fc; }
-.pncp-page-button:hover { border-color: #9abed5; background: #eaf4fa; }
-.notice-button { color: #245592; border-color: #c4d6ec; background: #f4f8fd; }
-.notice-button:hover { border-color: #96b5da; background: var(--blue-soft); }
+.pncp-notice-button { color: #285a7e; border-color: #bfd6e6; background: #edf6fb; }
+.pncp-notice-button:hover { border-color: #8eb7cf; background: #e2f1f8; }
+.notice-button { color: #5a4d87; border-color: #d4cae8; background: #f4f1fa; }
+.notice-button:hover { border-color: #b3a3d2; background: #ece6f6; }
+.pncp-ata-button { color: #755725; border-color: #e4d2ac; background: #fbf6e9; }
+.pncp-ata-button:hover { border-color: #cdb27b; background: #f7eed8; }
+.item-button { color: #3f6266; border-color: #c7dadd; background: #f0f6f6; }
+.item-button:hover { border-color: #9fbfc2; background: #e7f1f1; }
+.srp-button { color: #774b57; border-color: #dfc8ce; background: #faf1f3; }
+.srp-button:hover { border-color: #c9a6af; background: #f5e6e9; }
 .download-status { margin-top: 12px; color: var(--muted); font-size: 0.84rem; font-weight: 650; line-height: 1.45; }
 .download-status.loading { color: #245592; }
 .download-status[data-state="success"] { color: #146a45; }
@@ -256,6 +279,7 @@ h1, h2, h3, p { margin: 0; }
   .app-shell { padding: 12px 14px 34px; }
   .topbar { min-height: 68px; margin: -12px -14px 14px; padding: 11px 14px; }
   .brand-lockup h1 { max-width: 250px; font-size: 0.94rem; }
+  .app-version { font-size: 0.57rem; }
   .install-button { min-height: 42px; padding: 0 11px; font-size: 0.73rem; }
   .search-panel, .recent-panel { padding: 18px; }
   .search-panel .panel-heading { align-items: stretch; flex-direction: column; }
@@ -275,6 +299,8 @@ h1, h2, h3, p { margin: 0; }
 
 @media (max-width: 480px) {
   .brand-lockup h1 { max-width: 190px; font-size: 0.83rem; }
+  .brand-lockup { gap: 7px; }
+  .brand-lockup::before { height: 30px; }
   .install-button span:first-child { display: none; }
   .panel-title-lockup { align-items: flex-start; }
   .primary-actions { grid-template-columns: 1fr; }
