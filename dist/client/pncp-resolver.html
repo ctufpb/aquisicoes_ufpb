@@ -1,0 +1,221 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="theme-color" content="#f5f1e8" />
+  <title>Localizando no PNCP…</title>
+  <style>
+    * { box-sizing: border-box; }
+    body { display: grid; min-height: 100vh; margin: 0; place-items: center; padding: 24px; color: #22333d; background: linear-gradient(145deg, #f8f5ee, #edf2f5); font-family: Inter, system-ui, sans-serif; }
+    main { width: min(460px, 100%); padding: 30px; border: 1px solid #d9d2c4; border-radius: 18px; background: rgba(255,255,255,.92); box-shadow: 0 24px 70px rgba(36,52,63,.12); }
+    .mark { width: 42px; height: 4px; margin-bottom: 20px; border-radius: 999px; background: linear-gradient(90deg, #b78a43, #315168); }
+    h1 { margin: 0; font-family: "Iowan Old Style", "Palatino Linotype", Georgia, serif; font-size: 1.55rem; }
+    p { margin: 10px 0 0; color: #65737b; line-height: 1.55; }
+    a { display: none; margin-top: 22px; color: #315168; font-weight: 800; }
+    body.error a { display: inline-block; }
+  </style>
+</head>
+<body>
+  <main>
+    <div class="mark"></div>
+    <h1 id="title">Localizando no PNCP…</h1>
+    <p id="message">Esta aba será redirecionada automaticamente.</p>
+    <a href="./">Voltar ao app</a>
+  </main>
+  <script>
+    (() => {
+      'use strict';
+      const query = new URLSearchParams(location.search);
+      const data = {
+        tipo: query.get('tipo') || '',
+        compra: query.get('compra') || '',
+        cnpj: query.get('cnpj') || '',
+        uasg: query.get('uasg') || '',
+        pregao: query.get('pregao') || '',
+        ano: query.get('ano') || ''
+      };
+      const hosted = location.hostname.endsWith('.chatgpt.site');
+      const wait = milliseconds => new Promise(resolve => setTimeout(resolve, milliseconds));
+
+      function fail(message) {
+        document.body.classList.add('error');
+        document.getElementById('title').textContent = 'Não foi possível abrir o link';
+        document.getElementById('message').textContent = message;
+      }
+
+      async function fetchOfficial(target) {
+        const route = hosted ? `/pncp-proxy?target=${encodeURIComponent(target)}` : target;
+        for (let attempt = 1; attempt <= 2; attempt += 1) {
+          try {
+            const response = await fetch(route, { headers: { accept: 'application/json' }, cache: 'no-store' });
+            if (!response.ok) throw new Error(`Resposta ${response.status}`);
+            return await response.json();
+          } catch (error) {
+            if (attempt === 2) throw error;
+            await wait(650);
+          }
+        }
+        return null;
+      }
+
+      async function readPermanentLinks() {
+        if (!hosted) return null;
+        try {
+          const response = await fetch(`/pncp-link-cache?compra=${encodeURIComponent(data.compra)}`, { cache: 'no-store' });
+          return response.ok ? await response.json() : null;
+        } catch {
+          return null;
+        }
+      }
+
+      async function savePermanentLinks(cnpj, purchase, ataSequence) {
+        if (!hosted) return;
+        try {
+          await fetch('/pncp-link-cache', {
+            method: 'POST',
+            headers: { 'content-type': 'application/json' },
+            body: JSON.stringify({
+              compra: data.compra,
+              cnpj,
+              anoCompra: Number(purchase.anoCompra),
+              sequencialCompra: Number(purchase.sequencialCompra),
+              sequencialAta: ataSequence || null
+            })
+          });
+        } catch {
+          // O redirecionamento continua mesmo se o banco estiver indisponível.
+        }
+      }
+
+      async function findPurchase() {
+        let hadOfficialResponse = false;
+        for (const publicationYear of [Number(data.ano), Number(data.ano) + 1]) {
+          try {
+            let page = 1;
+            let totalPages = 1;
+            do {
+              const params = new URLSearchParams({
+                pagina: String(page),
+                tamanhoPagina: '500',
+                unidadeOrgaoCodigoUnidade: data.uasg,
+                orgaoEntidadeCnpj: data.cnpj,
+                dataPublicacaoPncpInicial: `${publicationYear}-01-01`,
+                dataPublicacaoPncpFinal: `${publicationYear}-12-31`,
+                codigoModalidade: '5'
+              });
+              const result = await fetchOfficial(`https://dadosabertos.compras.gov.br/modulo-contratacoes/1_consultarContratacoes_PNCP_14133?${params}`);
+              hadOfficialResponse = true;
+              const purchase = (result.resultado || []).find(record =>
+                String(record.idCompra || '') === data.compra ||
+                (String(record.numeroCompra || '').padStart(5, '0') === data.pregao && Number(record.anoCompraPncp) === Number(data.ano))
+              );
+              if (purchase) return { anoCompra: Number(purchase.anoCompraPncp), sequencialCompra: Number(purchase.sequencialCompraPncp) };
+              totalPages = Math.min(Number(result.totalPaginas) || 1, 25);
+              page += 1;
+            } while (page <= totalPages);
+          } catch {
+            // A segunda base oficial será consultada abaixo.
+          }
+        }
+
+        try {
+          for (const publicationYear of [Number(data.ano), Number(data.ano) + 1]) {
+            let page = 1;
+            let totalPages = 1;
+            do {
+              const params = new URLSearchParams({
+                dataInicial: `${publicationYear}0101`,
+                dataFinal: `${publicationYear}1231`,
+                codigoModalidadeContratacao: '6',
+                cnpj: data.cnpj,
+                codigoUnidadeAdministrativa: data.uasg,
+                pagina: String(page),
+                tamanhoPagina: '50'
+              });
+              const result = await fetchOfficial(`https://pncp.gov.br/api/consulta/v1/contratacoes/publicacao?${params}`);
+              hadOfficialResponse = true;
+              const purchase = (result.data || []).find(record =>
+                String(record.numeroCompra || '').padStart(5, '0') === data.pregao &&
+                Number(record.anoCompra) === Number(data.ano) &&
+                String(record.unidadeOrgao?.codigoUnidade || '') === data.uasg
+              );
+              if (purchase) return { anoCompra: Number(purchase.anoCompra), sequencialCompra: Number(purchase.sequencialCompra) };
+              totalPages = Math.min(Number(result.totalPaginas) || 1, 25);
+              page += 1;
+            } while (page <= totalPages);
+          }
+        } catch {
+          if (!hadOfficialResponse) throw new Error('Falha no acesso aos serviços oficiais. Tente novamente em instantes.');
+        }
+        return null;
+      }
+
+      async function findAtaSequence(cnpj, purchase) {
+        let result;
+        for (const route of ['api/pncp', 'pncp-api']) {
+          try {
+            result = await fetchOfficial(`https://pncp.gov.br/${route}/v1/orgaos/${cnpj}/compras/${purchase.anoCompra}/${purchase.sequencialCompra}/atas`);
+            break;
+          } catch {
+            // Tenta a rota oficial alternativa.
+          }
+        }
+        if (!result) throw new Error('Falha no acesso à consulta das atas. Tente novamente em instantes.');
+        const atas = Array.isArray(result) ? result : Array.isArray(result.data) ? result.data : [];
+        const ata = atas.find(record => record.cancelado !== true && Number(record.sequencialAta) > 0)
+          || atas.find(record => Number(record.sequencialAta) > 0);
+        if (!ata) throw new Error('A contratação foi encontrada, mas nenhuma ata está publicada no PNCP.');
+        return Number(ata.sequencialAta);
+      }
+
+      function remember(url) {
+        try {
+          const key = 'pregao-facil.recent';
+          const current = JSON.parse(localStorage.getItem(key) || '[]');
+          const label = `${data.tipo === 'ata' ? 'Ata' : 'Edital'} PNCP · ${data.uasg} · ${data.pregao}/${data.ano}`;
+          const next = [{ label, url, at: Date.now() }, ...current.filter(entry => entry.url !== url)].slice(0, 5);
+          localStorage.setItem(key, JSON.stringify(next));
+        } catch {
+          // O redirecionamento não depende do histórico local.
+        }
+      }
+
+      async function run() {
+        if (!['edital', 'ata'].includes(data.tipo) || !/^\d{17}$/.test(data.compra) || !/^\d{14}$/.test(data.cnpj) || !/^\d{6}$/.test(data.uasg) || !/^\d{5}$/.test(data.pregao) || !/^\d{4}$/.test(data.ano)) {
+          throw new Error('Os dados da contratação estão incompletos. Volte ao app e confira os campos.');
+        }
+
+        const cached = await readPermanentLinks();
+        if (data.tipo === 'edital' && cached?.editalUrl) {
+          remember(cached.editalUrl);
+          location.replace(cached.editalUrl);
+          return;
+        }
+        if (data.tipo === 'ata' && cached?.ataUrl) {
+          remember(cached.ataUrl);
+          location.replace(cached.ataUrl);
+          return;
+        }
+
+        const cnpj = cached?.cnpj || data.cnpj;
+        const purchase = cached
+          ? { anoCompra: Number(cached.anoCompra), sequencialCompra: Number(cached.sequencialCompra) }
+          : await findPurchase();
+        if (!purchase) throw new Error('Esta contratação ainda não foi localizada nas bases oficiais.');
+        const ataSequence = data.tipo === 'ata'
+          ? Number(cached?.sequencialAta) || await findAtaSequence(cnpj, purchase)
+          : null;
+        await savePermanentLinks(cnpj, purchase, ataSequence);
+        const destination = data.tipo === 'ata'
+          ? `https://pncp.gov.br/app/atas/${cnpj}/${purchase.anoCompra}/${purchase.sequencialCompra}/${ataSequence}`
+          : `https://pncp.gov.br/app/editais/${cnpj}/${purchase.anoCompra}/${purchase.sequencialCompra}`;
+        remember(destination);
+        location.replace(destination);
+      }
+
+      run().catch(error => fail(error instanceof Error ? error.message : 'Tente novamente em instantes.'));
+    })();
+  </script>
+</body>
+</html>

@@ -16,7 +16,7 @@ if (Test-Path -LiteralPath $dist) {
 New-Item -ItemType Directory -Path $client, $server -Force | Out-Null
 
 $assets = @(
-  'index.html', 'style.css', 'app.js', 'manifest.json', 'service-worker.js',
+  'index.html', 'style.css', 'app.js', 'pncp-resolver.html', 'manifest.json', 'service-worker.js',
   'icon-192.png', 'icon-512.png', 'comprasgov.png', 'sipac-ufpb.webp',
   'portal-transparencia.webp', 'pra-ufpb.png', 'uasgs.json'
 )

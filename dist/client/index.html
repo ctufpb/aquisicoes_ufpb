@@ -11,7 +11,7 @@
   <link rel="manifest" href="manifest.json" />
   <link rel="icon" href="icon-192.png" type="image/png" />
   <link rel="apple-touch-icon" href="icon-192.png" />
-  <link rel="stylesheet" href="style.css?v=1.0.3-classic" />
+  <link rel="stylesheet" href="style.css?v=1.0.3-mobile" />
 </head>
 <body>
   <div class="app-shell">
@@ -69,9 +69,9 @@
 
           <div id="currentActions">
             <div class="primary-actions">
-              <button class="secondary-button pncp-page-button pncp-notice-button" id="pncpNoticeBtn" type="button">Edital <span>🔎</span></button>
+              <a class="secondary-button pncp-page-button pncp-notice-button" id="pncpNoticeBtn" href="#" target="_blank" rel="noopener noreferrer">Edital <span>🔎</span></a>
               <button class="secondary-button notice-button" id="noticeBtn" type="button">Baixar edital <span>💾</span></button>
-              <button class="secondary-button pncp-page-button pncp-ata-button" id="pncpAtaBtn" type="button">Ata <span>🔎</span></button>
+              <a class="secondary-button pncp-page-button pncp-ata-button" id="pncpAtaBtn" href="#" target="_blank" rel="noopener noreferrer">Ata <span>🔎</span></a>
               <button class="primary-button purchase-button" id="purchaseBtn" type="button">Contratação <span>🔎</span></button>
               <button class="secondary-button item-button" id="itemBtn" type="button">Ver item 1 <span>🔎</span></button>
               <button class="secondary-button srp-button" id="srpBtn" type="button">Itens de ata SRP <span>🔎</span></button>
@@ -120,12 +120,12 @@
               </div>
               <p class="year-advisory" id="sipacCommitmentAdvisory" hidden></p>
               <div class="inline-fields">
-                <label class="field"><span>Termo de responsabilidade</span><input id="sipacTermInput" inputmode="numeric" value="3069" /></label>
+                <label class="field"><span class="long-field-label">Termo de responsabilidade</span><input id="sipacTermInput" inputmode="numeric" value="3069" /></label>
                 <label class="field year-field"><span>Ano</span><input id="sipacTermYearInput" inputmode="numeric" value="2025" minlength="4" maxlength="4" pattern="[0-9]{4}" /></label>
                 <button id="sipacTermBtn" type="button">Abrir <span>🔎</span></button>
               </div>
               <div class="inline-fields">
-                <label class="field"><span>Guia de movimentação</span><input id="sipacGuideInput" inputmode="numeric" value="2450" /></label>
+                <label class="field"><span class="long-field-label">Guia de movimentação</span><input id="sipacGuideInput" inputmode="numeric" value="2450" /></label>
                 <label class="field year-field"><span>Ano</span><input id="sipacGuideYearInput" inputmode="numeric" value="2025" minlength="4" maxlength="4" pattern="[0-9]{4}" /></label>
                 <button id="sipacGuideBtn" type="button">Abrir <span>🔎</span></button>
               </div>
@@ -141,10 +141,10 @@
                 <label class="field"><span>Gestão</span><input id="managementInput" inputmode="numeric" value="15231" maxlength="5" /></label>
                 <label class="field"><span>Ano</span><input id="transparencyYearInput" inputmode="numeric" value="2026" minlength="4" maxlength="4" pattern="[0-9]{4}" aria-describedby="transparencyYearAdvisory" /></label>
                 <label class="field commitment-field"><span>Empenho</span><input id="commitmentInput" inputmode="numeric" value="801009" maxlength="6" /></label>
+                <button class="wide-tool-button" id="transparencyBtn" type="button">Consultar empenho <span>🔎</span></button>
               </div>
               <p class="field-help" id="transparencyPreview"></p>
               <p class="year-advisory" id="transparencyYearAdvisory" hidden></p>
-              <button class="wide-tool-button" id="transparencyBtn" type="button">Consultar empenho <span>🔎</span></button>
             </div>
           </article>
 
@@ -186,6 +186,6 @@
     </section>
   </div>
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
-  <script src="app.js?v=1.0.3-classic" defer></script>
+  <script src="app.js?v=1.0.3-mobile" defer></script>
 </body>
 </html>
