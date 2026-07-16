@@ -1,12 +1,12 @@
-const CACHE_NAME = 'consulta-aquisicoes-v1.0.3-saved-counts';
+const CACHE_NAME = 'consulta-aquisicoes-v1.0.3-icon-v2';
 const ASSETS = [
   './',
   './index.html',
   './style.css',
   './app.js',
   './manifest.json',
-  './icon-192.png',
-  './icon-512.png',
+  './icon-192.png?v=2',
+  './icon-512.png?v=2',
   './comprasgov.png',
   './sipac-ufpb.webp',
   './portal-transparencia.webp',
