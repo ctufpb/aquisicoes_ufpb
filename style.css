@@ -245,6 +245,7 @@ h1, h2, h3, p { margin: 0; }
 .transparency-card .service-art { border-radius: var(--radius) var(--radius) 0 0; }
 .transparency-uasg-field { grid-column: 1 / -1; }
 .transparency-card .suggestions { width: 100%; max-height: 360px; overflow-y: auto; }
+.management-help { grid-column: 1 / -1; white-space: nowrap; }
 .wide-tool-button { display: flex; align-items: center; justify-content: space-between; width: 100%; margin-top: auto; }
 .transparency-fields .wide-tool-button { grid-column: 1 / -1; margin-top: 0; }
 .year-advisory { padding: 11px 13px; border: 1px solid #ecd19d; border-radius: 11px; color: #77480d; background: #fff8e9; font-size: 0.88rem; font-weight: 720; line-height: 1.45; }
@@ -339,7 +340,8 @@ h1, h2, h3, p { margin: 0; }
   .transparency-fields .field { font-size: 0.78rem; }
   .transparency-fields input { min-height: 50px; font-size: 0.96rem; }
   .commitment-field { grid-column: 1; }
-  .transparency-fields .wide-tool-button { grid-column: 2; align-self: end; min-height: 50px; padding: 0 9px; gap: 6px; font-size: 0.72rem; line-height: 1.1; }
+  .management-help { grid-row: 4; font-size: 0.68rem; letter-spacing: -0.01em; }
+  .transparency-fields .wide-tool-button { grid-column: 2; grid-row: 3; align-self: end; min-height: 50px; padding: 0 9px; gap: 6px; font-size: 0.72rem; line-height: 1.1; }
   .quick-links-card a { grid-template-columns: 82px minmax(0, 1fr); min-height: 132px; padding: 15px 43px 15px 14px; gap: 11px; }
   .quick-links-card a > div { gap: 5px; }
   .quick-links-card a > b { top: 14px; right: 14px; width: 30px; height: 30px; }

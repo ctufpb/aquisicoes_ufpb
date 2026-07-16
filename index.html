@@ -11,7 +11,7 @@
   <link rel="manifest" href="manifest.json" />
   <link rel="icon" href="icon-192.png" type="image/png" />
   <link rel="apple-touch-icon" href="icon-192.png" />
-  <link rel="stylesheet" href="style.css?v=1.0.3-transparency-uasg" />
+  <link rel="stylesheet" href="style.css?v=1.0.3-management-line" />
 </head>
 <body>
   <div class="app-shell">
@@ -149,9 +149,10 @@
                   </div>
                   <small class="field-help" id="transparencyUasgHelp">Carregando base de UASGs…</small>
                 </label>
-                <label class="field"><span>Gestão</span><input id="managementInput" inputmode="numeric" value="15231" maxlength="5" aria-describedby="managementHelp" /><small class="field-help" id="managementHelp">Automática para a UFPB.</small></label>
+                <label class="field"><span>Gestão</span><input id="managementInput" inputmode="numeric" value="15231" maxlength="5" aria-describedby="managementHelp" /></label>
                 <label class="field"><span>Ano</span><input id="transparencyYearInput" inputmode="numeric" value="2026" minlength="4" maxlength="4" pattern="[0-9]{4}" aria-describedby="transparencyYearAdvisory" /></label>
                 <label class="field commitment-field"><span>Empenho</span><input id="commitmentInput" inputmode="numeric" value="1234" maxlength="6" /></label>
+                <small class="field-help management-help" id="managementHelp">Gestão 15231 preenchida automaticamente para a UFPB.</small>
                 <button class="wide-tool-button" id="transparencyBtn" type="button">Consultar empenho <span>🔎</span></button>
               </div>
               <p class="field-help" id="transparencyPreview"></p>
