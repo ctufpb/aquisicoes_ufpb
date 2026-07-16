@@ -16,3 +16,12 @@ export const noticeCache = sqliteTable("notice_cache", {
   pncpSequence: integer("pncp_sequence").notNull(),
   updatedAt: integer("updated_at").notNull(),
 });
+
+export const pncpLinkCache = sqliteTable("pncp_link_cache", {
+  purchaseKey: text("purchase_key").primaryKey(),
+  cnpj: text("cnpj").notNull(),
+  pncpYear: integer("pncp_year").notNull(),
+  pncpSequence: integer("pncp_sequence").notNull(),
+  ataSequence: integer("ata_sequence"),
+  updatedAt: integer("updated_at").notNull(),
+});

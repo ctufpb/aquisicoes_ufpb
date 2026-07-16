@@ -15,6 +15,13 @@
       "when": 1784169000000,
       "tag": "0001_permanent_notice_cache",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1784256000000,
+      "tag": "0002_permanent_pncp_links",
+      "breakpoints": true
     }
   ]
 }

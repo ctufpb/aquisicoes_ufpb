@@ -48,6 +48,14 @@ async function ensureStorageSchema(db) {
         pncp_year INTEGER NOT NULL,
         pncp_sequence INTEGER NOT NULL,
         updated_at INTEGER NOT NULL
+      )`),
+      db.prepare(`CREATE TABLE IF NOT EXISTS pncp_link_cache (
+        purchase_key TEXT PRIMARY KEY NOT NULL,
+        cnpj TEXT NOT NULL,
+        pncp_year INTEGER NOT NULL,
+        pncp_sequence INTEGER NOT NULL,
+        ata_sequence INTEGER,
+        updated_at INTEGER NOT NULL
       )`)
     ]).then(() => true).catch(() => false);
   }
@@ -128,6 +136,59 @@ async function writePermanentNotice(db, notice, now) {
   }
 }
 
+async function readPermanentPncpLinks(db, purchaseKey) {
+  if (!(await ensureStorageSchema(db))) return null;
+  try {
+    const stored = await db.prepare(`SELECT
+      purchase_key AS purchaseKey,
+      cnpj,
+      pncp_year AS pncpYear,
+      pncp_sequence AS pncpSequence,
+      ata_sequence AS ataSequence,
+      updated_at AS updatedAt
+      FROM pncp_link_cache WHERE purchase_key = ? LIMIT 1`
+    ).bind(purchaseKey).first();
+    if (stored) return stored;
+    return await db.prepare(`SELECT
+      purchase_key AS purchaseKey,
+      cnpj,
+      pncp_year AS pncpYear,
+      pncp_sequence AS pncpSequence,
+      NULL AS ataSequence,
+      updated_at AS updatedAt
+      FROM notice_cache WHERE purchase_key = ? LIMIT 1`
+    ).bind(purchaseKey).first();
+  } catch {
+    return null;
+  }
+}
+
+async function writePermanentPncpLinks(db, links, now) {
+  if (!(await ensureStorageSchema(db))) return false;
+  try {
+    await db.prepare(`INSERT INTO pncp_link_cache
+      (purchase_key, cnpj, pncp_year, pncp_sequence, ata_sequence, updated_at)
+      VALUES (?, ?, ?, ?, ?, ?)
+      ON CONFLICT(purchase_key) DO UPDATE SET
+        cnpj = excluded.cnpj,
+        pncp_year = excluded.pncp_year,
+        pncp_sequence = excluded.pncp_sequence,
+        ata_sequence = COALESCE(excluded.ata_sequence, pncp_link_cache.ata_sequence),
+        updated_at = excluded.updated_at`
+    ).bind(
+      links.purchaseKey,
+      links.cnpj,
+      links.pncpYear,
+      links.pncpSequence,
+      links.ataSequence,
+      now
+    ).run();
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 function jsonResponse(value, status = 200, extraHeaders = {}) {
   return new Response(JSON.stringify(value), {
     status,
@@ -164,9 +225,72 @@ function parsePermanentNotice(value) {
   return { purchaseKey, noticeUrl: parsedUrl.toString(), cnpj, pncpYear, pncpSequence };
 }
 
+function parsePermanentPncpLinks(value) {
+  const purchaseKey = String(value?.compra || '');
+  const cnpj = String(value?.cnpj || '');
+  const pncpYear = Number(value?.anoCompra);
+  const pncpSequence = Number(value?.sequencialCompra);
+  const rawAtaSequence = value?.sequencialAta;
+  const ataSequence = rawAtaSequence === null || rawAtaSequence === undefined || rawAtaSequence === ''
+    ? null
+    : Number(rawAtaSequence);
+  if (!/^\d{17}$/.test(purchaseKey) || !/^\d{14}$/.test(cnpj)) return null;
+  if (!Number.isInteger(pncpYear) || pncpYear < 2000 || pncpYear > 2200) return null;
+  if (!Number.isInteger(pncpSequence) || pncpSequence < 1) return null;
+  if (ataSequence !== null && (!Number.isInteger(ataSequence) || ataSequence < 1)) return null;
+  return { purchaseKey, cnpj, pncpYear, pncpSequence, ataSequence };
+}
+
+function pncpLinksResponse(links) {
+  const noticePageUrl = `https://pncp.gov.br/app/editais/${links.cnpj}/${links.pncpYear}/${links.pncpSequence}`;
+  const ataPageUrl = links.ataSequence
+    ? `https://pncp.gov.br/app/atas/${links.cnpj}/${links.pncpYear}/${links.pncpSequence}/${links.ataSequence}`
+    : null;
+  return {
+    compra: links.purchaseKey,
+    cnpj: links.cnpj,
+    anoCompra: links.pncpYear,
+    sequencialCompra: links.pncpSequence,
+    sequencialAta: links.ataSequence ?? null,
+    editalUrl: noticePageUrl,
+    ataUrl: ataPageUrl,
+    atualizadoEm: links.updatedAt
+  };
+}
+
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
+    if (url.pathname === '/pncp-link-cache') {
+      if (request.method === 'GET') {
+        const purchaseKey = String(url.searchParams.get('compra') || '');
+        if (!/^\d{17}$/.test(purchaseKey)) return jsonResponse({ error: 'Chave da compra inválida.' }, 400);
+        const links = await readPermanentPncpLinks(env.DB, purchaseKey);
+        if (!links) return jsonResponse({ error: 'Links do PNCP ainda não armazenados.' }, 404);
+        return jsonResponse(pncpLinksResponse(links), 200, {
+          'x-cache-scope': 'permanent-database',
+          'x-cache-status': 'HIT'
+        });
+      }
+
+      if (request.method === 'POST') {
+        let body;
+        try { body = await request.json(); }
+        catch { return jsonResponse({ error: 'Conteúdo inválido.' }, 400); }
+        const links = parsePermanentPncpLinks(body);
+        if (!links) return jsonResponse({ error: 'Identificadores do PNCP inválidos.' }, 400);
+        const now = Math.floor(Date.now() / 1000);
+        const stored = await writePermanentPncpLinks(env.DB, links, now);
+        if (!stored) return jsonResponse({ error: 'Não foi possível armazenar os links do PNCP.' }, 503);
+        return jsonResponse(pncpLinksResponse({ ...links, updatedAt: now }), 201, {
+          'x-cache-scope': 'permanent-database',
+          'x-cache-status': 'STORED'
+        });
+      }
+
+      return jsonResponse({ error: 'Método não permitido.' }, 405, { allow: 'GET, POST' });
+    }
+
     if (url.pathname === '/edital-cache') {
       if (request.method === 'GET') {
         const purchaseKey = String(url.searchParams.get('compra') || '');

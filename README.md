@@ -2,7 +2,7 @@
 
 PWA enxuta para consultas no ComprasNet, download de editais pelo PNCP, SIPAC e Portal da Transparência.
 
-As respostas públicas usadas durante a pesquisa têm um cache temporário compartilhado. Quando um edital é localizado com sucesso, a relação entre a compra e o link direto é gravada permanentemente no banco compartilhado, sem prazo de expiração. Formulário, favoritos e pesquisas recentes continuam somente no aparelho do usuário.
+As respostas públicas usadas durante a pesquisa têm um cache temporário compartilhado. Quando uma contratação, um edital direto ou uma ata é localizada com sucesso no PNCP, seus identificadores são gravados permanentemente no banco compartilhado, sem prazo de expiração. Formulário, favoritos e pesquisas recentes continuam somente no aparelho do usuário.
 
 ## Estrutura
 

@@ -103,7 +103,7 @@ h1, h2, h3, p { margin: 0; }
 .panel-title-lockup { display: flex; align-items: center; gap: 12px; }
 .panel-heading h3 { font-size: 1.32rem; line-height: 1.2; letter-spacing: -0.025em; }
 .panel-heading-actions { display: grid; justify-items: end; }
-.comprasnet-brand { width: 178px; height: auto; object-fit: contain; }
+.comprasnet-brand { width: 230px; height: auto; object-fit: contain; }
 .consultation-title { margin-top: 18px; font-size: 1.32rem; line-height: 1.2; letter-spacing: -0.025em; }
 .compact-heading { align-items: center; }
 
@@ -164,6 +164,8 @@ h1, h2, h3, p { margin: 0; }
 .purchase-button:hover { border-color: #7fc0b5; background: linear-gradient(135deg, #e8f8f4, #d3ece6); box-shadow: 0 12px 25px rgba(20, 123, 112, 0.16); }
 .secondary-button { color: var(--ink); border-color: var(--line); background: #fff; }
 .secondary-button:hover { border-color: #aebfba; transform: translateY(-2px); box-shadow: var(--shadow-sm); }
+.pncp-page-button { color: #255b83; border-color: #c7dceb; background: #f5f9fc; }
+.pncp-page-button:hover { border-color: #9abed5; background: #eaf4fa; }
 .notice-button { color: #245592; border-color: #c4d6ec; background: #f4f8fd; }
 .notice-button:hover { border-color: #96b5da; background: var(--blue-soft); }
 .download-status { margin-top: 12px; color: var(--muted); font-size: 0.84rem; font-weight: 650; line-height: 1.45; }
@@ -171,6 +173,7 @@ h1, h2, h3, p { margin: 0; }
 .download-status[data-state="success"] { color: #146a45; }
 .download-status[data-state="not-found"],
 .download-status[data-state="no-notice"],
+.download-status[data-state="no-ata"],
 .download-status[data-state="validation"] { color: #925813; }
 .download-status[data-state="access"] { color: #a33c3c; }
 
@@ -257,7 +260,7 @@ h1, h2, h3, p { margin: 0; }
   .search-panel, .recent-panel { padding: 18px; }
   .search-panel .panel-heading { align-items: stretch; flex-direction: column; }
   .panel-heading-actions { justify-items: stretch; }
-  .comprasnet-brand { width: 142px; }
+  .comprasnet-brand { width: 180px; }
   .mode-switch { width: 100%; }
   .mode-switch button { flex: 1; }
   .form-grid { grid-template-columns: 1fr 1fr; }

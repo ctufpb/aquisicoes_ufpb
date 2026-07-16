@@ -11,7 +11,7 @@
   <link rel="manifest" href="manifest.json" />
   <link rel="icon" href="icon-192.png" type="image/png" />
   <link rel="apple-touch-icon" href="icon-192.png" />
-  <link rel="stylesheet" href="style.css?v=1.0.3-links" />
+  <link rel="stylesheet" href="style.css?v=1.0.3-pncp" />
 </head>
 <body>
   <div class="app-shell">
@@ -68,12 +68,14 @@
 
           <div id="currentActions">
             <div class="primary-actions">
-              <button class="primary-button purchase-button" id="purchaseBtn" type="button">Ver pregão <span>🔎</span></button>
-              <button class="secondary-button" id="itemBtn" type="button">Ver item 1 <span>🔎</span></button>
+              <button class="secondary-button pncp-page-button" id="pncpNoticeBtn" type="button">Edital <span>🔎</span></button>
               <button class="secondary-button notice-button" id="noticeBtn" type="button">Baixar edital <span>💾</span></button>
+              <button class="secondary-button pncp-page-button" id="pncpAtaBtn" type="button">Ata <span>🔎</span></button>
+              <button class="primary-button purchase-button" id="purchaseBtn" type="button">Contratação <span>🔎</span></button>
+              <button class="secondary-button" id="itemBtn" type="button">Ver item 1 <span>🔎</span></button>
               <button class="secondary-button srp-button" id="srpBtn" type="button">Itens de ata SRP <span>🔎</span></button>
             </div>
-            <p class="download-status" id="noticeStatus">O edital será localizado automaticamente no PNCP.</p>
+            <p class="download-status" id="noticeStatus">Os links do PNCP e o edital serão localizados automaticamente.</p>
           </div>
 
           <div id="legacyActions" hidden>
@@ -183,6 +185,6 @@
     </section>
   </div>
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
-  <script src="app.js?v=1.0.3-links" defer></script>
+  <script src="app.js?v=1.0.3-pncp" defer></script>
 </body>
 </html>

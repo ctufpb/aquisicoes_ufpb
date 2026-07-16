@@ -416,7 +416,6 @@
     try {
       const comprasGovPurchase = await findPurchaseOnComprasGov(info, cnpj);
       if (comprasGovPurchase) return rememberPncpPurchase(cacheKey, comprasGovPurchase);
-      return null;
     } catch {
       // Se o Compras.gov.br estiver instável, a pesquisa segue pela API do PNCP.
     }
@@ -491,6 +490,133 @@
     }
   }
 
+  async function getPermanentPncpLinks(purchaseKey) {
+    if (!window.location.hostname.endsWith('.chatgpt.site')) return null;
+    try {
+      const response = await fetch(`/pncp-link-cache?compra=${encodeURIComponent(purchaseKey)}`, {
+        cache: 'no-store',
+        headers: { accept: 'application/json' }
+      });
+      if (!response.ok) return null;
+      const stored = await response.json();
+      return stored?.cnpj && stored?.anoCompra && stored?.sequencialCompra ? stored : null;
+    } catch {
+      return null;
+    }
+  }
+
+  async function savePermanentPncpLinks(info, cnpj, purchase, ataSequence = null) {
+    if (!window.location.hostname.endsWith('.chatgpt.site')) return false;
+    try {
+      const response = await fetch('/pncp-link-cache', {
+        method: 'POST',
+        headers: { accept: 'application/json', 'content-type': 'application/json' },
+        body: JSON.stringify({
+          compra: info.key,
+          cnpj,
+          anoCompra: Number(purchase.anoCompra),
+          sequencialCompra: Number(purchase.sequencialCompra),
+          sequencialAta: ataSequence
+        })
+      });
+      return response.ok;
+    } catch {
+      return false;
+    }
+  }
+
+  async function findPncpAtaSequence(cnpj, purchase) {
+    const ataUrls = [
+      `https://pncp.gov.br/api/pncp/v1/orgaos/${cnpj}/compras/${purchase.anoCompra}/${purchase.sequencialCompra}/atas`,
+      `https://pncp.gov.br/pncp-api/v1/orgaos/${cnpj}/compras/${purchase.anoCompra}/${purchase.sequencialCompra}/atas`
+    ];
+    let result;
+    for (const url of ataUrls) {
+      try {
+        result = await fetchPncpJson(url, '');
+        break;
+      } catch {
+        // Tenta a segunda rota pública oficial do PNCP.
+      }
+    }
+    if (!result) throw noticeError('access', 'Falha no acesso: o PNCP não respondeu à consulta das atas. Tente novamente em instantes.');
+    const atas = Array.isArray(result) ? result : Array.isArray(result.data) ? result.data : [];
+    const ata = atas.find(record => record.cancelado !== true && Number(record.sequencialAta) > 0)
+      || atas.find(record => Number(record.sequencialAta) > 0);
+    if (!ata) throw noticeError('no-ata', 'Sem ata: a contratação foi encontrada, mas nenhuma ata está publicada no PNCP.');
+    return Number(ata.sequencialAta);
+  }
+
+  async function resolvePncpLinks(info, unit, includeAta) {
+    const cached = await getPermanentPncpLinks(info.key);
+    const cnpj = cached?.cnpj || unit.o;
+    const purchase = cached
+      ? { anoCompra: Number(cached.anoCompra), sequencialCompra: Number(cached.sequencialCompra) }
+      : await findPncpPurchase(info, cnpj);
+    if (!purchase) throw noticeError('not-found', 'Ainda não publicado: esta contratação não foi localizada nas bases oficiais. Use “Contratação” para conferir no ComprasNet.');
+
+    let ataSequence = Number(cached?.sequencialAta) || null;
+    if (includeAta && !ataSequence) ataSequence = await findPncpAtaSequence(cnpj, purchase);
+    const needsSave = !cached || (includeAta && !cached.sequencialAta);
+    const storedPermanently = needsSave
+      ? await savePermanentPncpLinks(info, cnpj, purchase, ataSequence)
+      : true;
+
+    return {
+      editalUrl: `https://pncp.gov.br/app/editais/${cnpj}/${purchase.anoCompra}/${purchase.sequencialCompra}`,
+      ataUrl: ataSequence
+        ? `https://pncp.gov.br/app/atas/${cnpj}/${purchase.anoCompra}/${purchase.sequencialCompra}/${ataSequence}`
+        : '',
+      fromCache: Boolean(cached) && (!includeAta || Boolean(cached.sequencialAta)),
+      storedPermanently
+    };
+  }
+
+  async function openPncpPage(kind) {
+    const status = $('noticeStatus');
+    if (!requireFourDigitYear(fields.year)) {
+      status.dataset.state = 'validation';
+      status.textContent = 'Ano inválido: informe exatamente 4 dígitos.';
+      return;
+    }
+    const info = purchaseInfo();
+    const unit = uasgs.find(record => record.c === info.uasg);
+    if (!info.key) return showToast('Preencha a UASG e o pregão para localizar o link no PNCP.');
+    if (!unit?.o) return showToast('Não foi possível identificar o CNPJ desta UASG. Escolha a unidade novamente na lista.');
+
+    const isAta = kind === 'ata';
+    const button = $(isAta ? 'pncpAtaBtn' : 'pncpNoticeBtn');
+    const originalText = button.innerHTML;
+    button.disabled = true;
+    button.textContent = isAta ? 'Localizando ata…' : 'Localizando edital…';
+    status.classList.add('loading');
+    status.dataset.state = 'loading';
+    status.textContent = isAta ? 'Consultando a ata no PNCP…' : 'Localizando a contratação no PNCP…';
+
+    try {
+      const links = await resolvePncpLinks(info, unit, isAta);
+      const url = isAta ? links.ataUrl : links.editalUrl;
+      const label = `${isAta ? 'Ata' : 'Edital'} PNCP · ${info.uasg} · ${info.tender}/${info.year}`;
+      openUrl(url, label);
+      status.dataset.state = 'success';
+      status.textContent = links.fromCache
+        ? `${isAta ? 'Ata' : 'Edital'} recuperado do histórico compartilhado.`
+        : links.storedPermanently
+          ? `${isAta ? 'Ata' : 'Edital'} localizado e salvo no histórico compartilhado.`
+          : `${isAta ? 'Ata' : 'Edital'} localizado; o histórico compartilhado está temporariamente indisponível.`;
+      showToast(`${isAta ? 'Ata' : 'Edital'} localizado no PNCP.`);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Não foi possível localizar o link no PNCP.';
+      status.dataset.state = error?.noticeState || 'access';
+      status.textContent = message;
+      showToast(message);
+    } finally {
+      button.disabled = false;
+      button.innerHTML = originalText;
+      status.classList.remove('loading');
+    }
+  }
+
   function startNoticeDownload(info, noticeUrl) {
     const label = `${info.uasg} · Edital PE ${info.tender}/${info.year}`;
     remember(label, noticeUrl);
@@ -527,6 +653,10 @@
     try {
       const storedNotice = await getPermanentNotice(info.key);
       if (storedNotice?.url) {
+        await savePermanentPncpLinks(info, storedNotice.cnpj, {
+          anoCompra: storedNotice.anoCompra,
+          sequencialCompra: storedNotice.sequencialCompra
+        });
         startNoticeDownload(info, storedNotice.url);
         status.dataset.state = 'success';
         status.textContent = 'Edital recuperado do histórico compartilhado. O download foi iniciado.';
@@ -535,7 +665,8 @@
       }
 
       const purchase = await findPncpPurchase(info, unit.o);
-      if (!purchase) throw noticeError('not-found', 'Ainda não publicado: esta contratação não foi localizada nas bases oficiais. Use “Ver pregão” para conferir no ComprasNet.');
+      if (!purchase) throw noticeError('not-found', 'Ainda não publicado: esta contratação não foi localizada nas bases oficiais. Use “Contratação” para conferir no ComprasNet.');
+      await savePermanentPncpLinks(info, unit.o, purchase);
       const documentUrls = [
         `https://pncp.gov.br/api/pncp/v1/orgaos/${unit.o}/compras/${purchase.anoCompra}/${purchase.sequencialCompra}/arquivos`,
         `https://pncp.gov.br/pncp-api/v1/orgaos/${unit.o}/compras/${purchase.anoCompra}/${purchase.sequencialCompra}/arquivos`
@@ -616,14 +747,16 @@
     $('purchaseBtn').addEventListener('click', () => {
       if (!requireFourDigitYear(fields.year)) return;
       const info = purchaseInfo();
-      openUrl(info.purchaseUrl, `${info.uasg} · PE ${info.tender}/${info.year}`);
+      openUrl(info.purchaseUrl, `Contratação · ${info.uasg} · ${info.tender}/${info.year}`);
     });
     $('itemBtn').addEventListener('click', () => {
       if (!requireFourDigitYear(fields.year)) return;
       const info = purchaseInfo();
       openUrl(info.itemUrl, `${info.uasg} · PE ${info.tender}/${info.year} · item ${info.item}`);
     });
+    $('pncpNoticeBtn').addEventListener('click', () => openPncpPage('edital'));
     $('noticeBtn').addEventListener('click', downloadCurrentNotice);
+    $('pncpAtaBtn').addEventListener('click', () => openPncpPage('ata'));
     $('srpBtn').addEventListener('click', () => {
       if (!requireFourDigitYear(fields.year)) return;
       const info = purchaseInfo();
