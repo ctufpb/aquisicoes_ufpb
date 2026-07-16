@@ -268,6 +268,16 @@ h1, h2, h3, p { margin: 0; }
 .pra-logo { width: 124px; height: 116px; padding: 8px; border: 1px solid rgba(184, 213, 205, 0.9); border-radius: 20px; background: rgba(255, 255, 255, 0.9); object-fit: contain; box-shadow: 0 10px 26px rgba(28, 53, 47, 0.1); }
 .compras-logo { width: 184px; height: auto; padding: 8px; border-radius: 14px; background: rgba(255, 255, 255, 0.78); }
 
+.app-footer { display: grid; place-items: center; margin-top: 18px; text-align: center; }
+.about-disclosure { display: grid; justify-items: center; max-width: 760px; color: var(--muted); }
+.about-disclosure summary { padding: 5px 8px; list-style: none; color: #697873; font-size: 0.68rem; font-weight: 750; cursor: pointer; user-select: none; }
+.about-disclosure summary::-webkit-details-marker { display: none; }
+.about-disclosure summary::after { content: " +"; color: var(--brand); font-weight: 900; }
+.about-disclosure[open] summary::after { content: " −"; }
+.about-disclosure summary:hover { color: var(--brand-strong); }
+.about-disclosure summary:focus-visible { border-radius: 7px; outline: 2px solid rgba(20, 123, 112, 0.35); outline-offset: 2px; }
+.about-disclosure p { margin-top: 3px; padding: 9px 13px; border: 1px solid rgba(207, 222, 217, 0.72); border-radius: 10px; color: #64726d; background: rgba(255, 255, 255, 0.55); font-size: 0.72rem; line-height: 1.5; }
+
 .modal-backdrop { position: fixed; inset: 0; z-index: 70; display: grid; place-items: center; padding: 18px; background: rgba(17, 30, 26, 0.55); backdrop-filter: blur(9px); }
 .install-dialog { position: relative; width: min(450px, 100%); padding: 28px; border: 1px solid rgba(255, 255, 255, 0.62); border-radius: 20px; background: #fff; box-shadow: 0 34px 100px rgba(8, 24, 19, 0.32); }
 .version-pill { display: inline-flex; min-height: 26px; align-items: center; padding: 0 9px; border-radius: 999px; color: var(--brand-strong); background: var(--brand-soft); font-size: 0.67rem; font-weight: 900; }
