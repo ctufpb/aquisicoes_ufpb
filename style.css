@@ -270,7 +270,7 @@ h1, h2, h3, p { margin: 0; }
 
 .app-footer { display: grid; place-items: center; margin-top: 18px; text-align: center; }
 .about-disclosure { display: grid; justify-items: center; max-width: 760px; color: var(--muted); }
-.about-disclosure summary { padding: 5px 8px; list-style: none; color: #697873; font-size: 0.68rem; font-weight: 750; cursor: pointer; user-select: none; }
+.about-disclosure summary { padding: 5px 8px; list-style: none; color: #697873; font-size: 0.78rem; font-weight: 750; cursor: pointer; user-select: none; }
 .about-disclosure summary::-webkit-details-marker { display: none; }
 .about-disclosure summary::after { content: " +"; color: var(--brand); font-weight: 900; }
 .about-disclosure[open] summary::after { content: " −"; }
