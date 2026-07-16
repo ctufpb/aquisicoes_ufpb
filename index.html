@@ -11,7 +11,7 @@
   <link rel="manifest" href="manifest.json" />
   <link rel="icon" href="icon-192.png" type="image/png" />
   <link rel="apple-touch-icon" href="icon-192.png" />
-  <link rel="stylesheet" href="style.css?v=1.0.3-mobile" />
+  <link rel="stylesheet" href="style.css?v=1.0.3-guidance" />
 </head>
 <body>
   <div class="app-shell">
@@ -67,6 +67,8 @@
             </label>
           </div>
 
+          <p class="mode-year-advisory" id="modeYearAdvisory" role="status" aria-live="polite" hidden></p>
+
           <div id="currentActions">
             <div class="primary-actions">
               <a class="secondary-button pncp-page-button pncp-notice-button" id="pncpNoticeBtn" href="#" target="_blank" rel="noopener noreferrer">Edital <span>🔎</span></a>
@@ -82,7 +84,7 @@
           <div id="legacyActions" hidden>
             <div class="legacy-banner">
               <span aria-hidden="true">⌛</span>
-              <div><strong>Consulta antiga</strong><small>Atalhos preservados para aquisições anteriores.</small></div>
+              <div><strong>Consulta antiga -</strong><small>Atalhos preservados para aquisições anteriores.</small></div>
             </div>
             <div class="legacy-actions">
               <button type="button" data-legacy="ata"><span>Ata do pregão</span><b>🔎</b></button>
@@ -186,6 +188,6 @@
     </section>
   </div>
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
-  <script src="app.js?v=1.0.3-mobile" defer></script>
+  <script src="app.js?v=1.0.3-guidance" defer></script>
 </body>
 </html>

@@ -8,6 +8,8 @@
   const FAVORITES_KEY = 'pregao-facil.favorite-uasgs';
   const UFPB_CNPJ = '24098477000110';
   const EMPENHO_WEB_START_YEAR = 2021;
+  const CURRENT_PREGAO_START_YEAR = 2022;
+  const CURRENT_ONLY_START_YEAR = 2024;
   const UFPB_FALLBACK = [
     { c: '153065', n: 'UNIVERSIDADE FEDERAL DA PARAÍBA - CAMPUS I', uf: 'PB', a: 1, u: 1, o: UFPB_CNPJ },
     { c: '153066', n: 'PREFEITURA UNIVERSITÁRIA DA UFPB', uf: 'PB', a: 1, u: 1, o: UFPB_CNPJ },
@@ -86,10 +88,12 @@
     return String(value || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
   }
 
-  function tenderCurrent(value) {
+  function tenderCurrent(value, yearValue) {
     const raw = onlyDigits(value);
     if (!raw) return '';
-    const normalized = raw.length <= 4 ? 90000 + Number(raw) : Number(raw);
+    const year = Number(yearValue);
+    const usesNewNumbering = year >= CURRENT_ONLY_START_YEAR;
+    const normalized = raw.length <= 4 && usesNewNumbering ? 90000 + Number(raw) : Number(raw);
     return String(Math.min(99999, normalized)).padStart(5, '0');
   }
 
@@ -129,8 +133,8 @@
 
   function purchaseInfo() {
     const uasg = onlyDigits(fields.uasgInput.value).slice(0, 6);
-    const tender = tenderCurrent(fields.tender.value);
     const year = /^\d{4}$/.test(fields.year.value) ? fields.year.value : '';
+    const tender = tenderCurrent(fields.tender.value, year);
     const item = Math.max(1, Number(onlyDigits(fields.item.value)) || 1);
     const key = uasg.length === 6 && tender && year ? `${uasg}05${tender}${year}` : '';
     return {
@@ -195,6 +199,23 @@
         : 'Carregando base de UASGs…';
     $('tenderHelp').textContent = mode === 'current' && info.tender ? `Será usado ${info.tender}` : 'Número sem o ano';
     $('itemBtn').childNodes[0].nodeValue = `Ver item ${info.item} `;
+    const purchaseYear = isFourDigitYear(fields.year.value) ? Number(fields.year.value) : 0;
+    const transitionYear = purchaseYear >= CURRENT_PREGAO_START_YEAR && purchaseYear < CURRENT_ONLY_START_YEAR;
+    const modeYearAdvisory = $('modeYearAdvisory');
+    let modeYearMessage = '';
+    if (purchaseYear) {
+      if (mode === 'current' && purchaseYear < CURRENT_PREGAO_START_YEAR) {
+        modeYearMessage = 'Este ano pertence à consulta anterior. Clique em “Pregões antigos”.';
+      } else if (mode === 'legacy' && purchaseYear >= CURRENT_ONLY_START_YEAR) {
+        modeYearMessage = 'Este ano pertence à consulta atual. Clique em “Atual”.';
+      } else if (transitionYear && mode === 'current') {
+        modeYearMessage = 'Ano de transição: se não encontrar aqui, tente “Pregões antigos”.';
+      } else if (transitionYear) {
+        modeYearMessage = 'Ano de transição: esta contratação também pode estar em “Atual”.';
+      }
+    }
+    modeYearAdvisory.hidden = !modeYearMessage;
+    modeYearAdvisory.textContent = modeYearMessage;
     const transparencyYear = isFourDigitYear(fields.transparencyYear.value) ? fields.transparencyYear.value : '';
     $('transparencyPreview').textContent = `UASG ${info.uasg || '—'} · ${transparencyYear || '—'}NE${onlyDigits(fields.commitment.value).padStart(6, '0')}`;
     const historicalMessage = 'Atenção: para anos até 2020, confira também a faixa histórica 800001–999999. O Empenho Web passou a estruturar esses dados a partir de 2021.';

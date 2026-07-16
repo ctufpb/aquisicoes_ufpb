@@ -202,12 +202,14 @@ h1, h2, h3, p { margin: 0; }
 .download-status[data-state="validation"] { color: #925813; }
 .download-status[data-state="access"] { color: #a33c3c; }
 
-.legacy-banner { display: flex; align-items: center; gap: 10px; margin-top: 20px; padding: 12px 14px; border: 1px solid #efd9b2; border-radius: var(--radius-sm); color: #70420e; background: var(--amber-soft); }
-.legacy-banner > div { display: grid; gap: 2px; }
+.mode-year-advisory { margin-top: 12px; padding: 9px 12px; border: 1px solid #e4c988; border-radius: 10px; color: #71470f; background: #fff8e8; font-size: 0.84rem; font-weight: 780; line-height: 1.35; }
+
+.legacy-banner { display: flex; align-items: center; gap: 8px; margin-top: 16px; padding: 8px 12px; border: 1px solid #efd9b2; border-radius: var(--radius-sm); color: #70420e; background: var(--amber-soft); }
+.legacy-banner > div { display: flex; align-items: baseline; gap: 4px; min-width: 0; white-space: nowrap; }
 .legacy-banner strong { font-size: 0.9rem; }
 .legacy-banner small { color: #80643e; font-size: 0.8rem; }
 .legacy-actions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 9px; margin-top: 12px; }
-.legacy-actions button { display: flex; align-items: center; justify-content: space-between; gap: 10px; min-height: 50px; padding: 0 14px; border: 1px solid var(--line); border-radius: var(--radius-sm); color: var(--ink); background: #fff; font-size: 0.86rem; font-weight: 800; text-align: left; }
+.legacy-actions button { display: flex; align-items: center; justify-content: space-between; gap: 10px; min-height: 50px; padding: 0 14px; border: 1px solid var(--line); border-radius: var(--radius-sm); color: var(--ink); background: #fff; font-size: 1rem; font-weight: 850; text-align: left; }
 .legacy-actions button:hover { border-color: #aebfba; background: #f8fbfa; }
 .legacy-actions b { color: var(--brand); }
 
@@ -316,6 +318,11 @@ h1, h2, h3, p { margin: 0; }
   .primary-actions { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
   .primary-actions > * { min-height: 52px; padding: 0 7px; gap: 6px; font-size: 0.77rem; line-height: 1.15; white-space: normal; }
   .notice-button { grid-column: auto; }
+  .legacy-banner { gap: 0; padding: 8px 9px; }
+  .legacy-banner > span { display: none; }
+  .legacy-banner > div { gap: 3px; letter-spacing: -0.025em; }
+  .legacy-banner strong, .legacy-banner small { font-size: 0.7rem; }
+  .legacy-actions button { font-size: 0.94rem; }
   .tool-card-body { gap: 13px; padding: 18px 16px; }
   .inline-fields { grid-template-columns: minmax(0, 1fr) 68px 60px; gap: 7px; }
   .inline-fields .field { gap: 5px; font-size: 0.72rem; }
