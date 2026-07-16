@@ -32,13 +32,19 @@
       <section class="workspace-grid" aria-label="Consulta de contratação">
         <article class="panel search-panel">
           <div class="panel-heading">
-            <div>
-              <span class="section-kicker">Pesquisa</span>
-              <h3>Dados da contratação</h3>
+            <div class="panel-title-lockup">
+              <span class="panel-icon" aria-hidden="true">⌕</span>
+              <div>
+                <span class="section-kicker">Pesquisa</span>
+                <h3>Dados da contratação</h3>
+              </div>
             </div>
-            <div class="mode-switch" aria-label="Tipo de consulta">
-              <button class="active" id="currentModeBtn" type="button" aria-pressed="true">Atual</button>
-              <button id="legacyModeBtn" type="button" aria-pressed="false">Pregões antigos</button>
+            <div class="panel-heading-actions">
+              <img class="comprasnet-brand" src="comprasgov.png" alt="Compras.gov.br" />
+              <div class="mode-switch" aria-label="Tipo de consulta">
+                <button class="active" id="currentModeBtn" type="button" aria-pressed="true">Atual</button>
+                <button id="legacyModeBtn" type="button" aria-pressed="false">Pregões antigos</button>
+              </div>
             </div>
           </div>
 
@@ -93,70 +99,70 @@
 
         <aside class="panel recent-panel" aria-labelledby="recentTitle">
           <div class="panel-heading compact-heading">
-            <div>
-              <span class="section-kicker">Neste aparelho</span>
-              <h3 id="recentTitle">Pesquisas recentes</h3>
-            </div>
-            <button class="clear-button" id="clearRecentBtn" type="button">Limpar</button>
+            <h3 id="recentTitle">Pesquisas recentes</h3>
+            <button class="clear-button" id="clearRecentBtn" type="button"><span aria-hidden="true">×</span> Limpar</button>
           </div>
           <div class="recent-list" id="recentList"></div>
-          <p class="empty-state" id="recentEmpty">As consultas abertas aparecerão aqui.</p>
         </aside>
       </section>
 
       <section class="tools-section" aria-labelledby="toolsTitle">
         <div class="section-heading">
-          <div>
-            <span class="section-kicker">Atalhos</span>
-            <h2 id="toolsTitle">Outras consultas</h2>
-          </div>
-          <p>SIPAC, empenhos e catálogo no mesmo lugar.</p>
+          <h2 id="toolsTitle">Outras consultas</h2>
         </div>
 
         <div class="tools-grid">
           <article class="panel tool-card sipac-card">
-            <div class="tool-title">
-              <span>SI</span>
-              <div><h3>SIPAC UFPB</h3><p>Requisições e empenhos</p></div>
+            <div class="service-art">
+              <img src="sipac-ufpb.webp" alt="Universidade Federal da Paraíba — SIPAC" />
             </div>
-            <div class="inline-fields">
-              <label class="field"><span>Requisição</span><input id="sipacRequestInput" inputmode="numeric" value="6042" /></label>
-              <label class="field year-field"><span>Ano</span><input id="sipacYearInput" inputmode="numeric" value="2026" maxlength="4" /></label>
-              <button id="sipacRequestBtn" type="button">Abrir ↗</button>
-            </div>
-            <div class="inline-fields">
-              <label class="field"><span>Empenho</span><input id="sipacCommitmentInput" inputmode="numeric" value="801009" /></label>
-              <label class="field year-field"><span>Ano</span><input id="sipacCommitmentYear" inputmode="numeric" value="2026" readonly /></label>
-              <button id="sipacCommitmentBtn" type="button">Abrir ↗</button>
+            <div class="tool-card-body">
+              <div class="inline-fields">
+                <label class="field"><span>Requisição</span><input id="sipacRequestInput" inputmode="numeric" value="6042" /></label>
+                <label class="field year-field"><span>Ano</span><input id="sipacYearInput" inputmode="numeric" value="2026" maxlength="4" /></label>
+                <button id="sipacRequestBtn" type="button">Abrir <span>↗</span></button>
+              </div>
+              <div class="inline-fields">
+                <label class="field"><span>Empenho</span><input id="sipacCommitmentInput" inputmode="numeric" value="801009" /></label>
+                <label class="field year-field"><span>Ano</span><input id="sipacCommitmentYear" inputmode="numeric" value="2026" readonly /></label>
+                <button id="sipacCommitmentBtn" type="button">Abrir <span>↗</span></button>
+              </div>
             </div>
           </article>
 
           <article class="panel tool-card transparency-card">
-            <div class="tool-title">
-              <span>PT</span>
-              <div><h3>Portal da Transparência</h3><p>Detalhamento do empenho</p></div>
+            <div class="service-art">
+              <img src="portal-transparencia.webp" alt="gov.br — Portal da Transparência" />
             </div>
-            <div class="transparency-fields">
-              <label class="field"><span>Gestão</span><input id="managementInput" inputmode="numeric" value="15231" maxlength="5" /></label>
-              <label class="field"><span>Ano</span><input id="transparencyYearInput" inputmode="numeric" value="2026" maxlength="4" /></label>
-              <label class="field commitment-field"><span>Empenho</span><input id="commitmentInput" inputmode="numeric" value="801009" maxlength="6" /></label>
+            <div class="tool-card-body">
+              <div class="transparency-fields">
+                <label class="field"><span>Gestão</span><input id="managementInput" inputmode="numeric" value="15231" maxlength="5" /></label>
+                <label class="field"><span>Ano</span><input id="transparencyYearInput" inputmode="numeric" value="2026" maxlength="4" /></label>
+                <label class="field commitment-field"><span>Empenho</span><input id="commitmentInput" inputmode="numeric" value="801009" maxlength="6" /></label>
+              </div>
+              <p class="field-help" id="transparencyPreview"></p>
+              <button class="wide-tool-button" id="transparencyBtn" type="button">Consultar empenho <span>↗</span></button>
             </div>
-            <p class="field-help" id="transparencyPreview"></p>
-            <button class="wide-tool-button" id="transparencyBtn" type="button">Consultar empenho <span>↗</span></button>
           </article>
 
           <article class="quick-links-card" aria-label="Atalhos externos">
             <a class="planning-link" href="https://docs.google.com/spreadsheets/d/1jGLa06mQH72GxSqIlkwxTO5CDAF3Pw3YwF_duSc5cCM/edit?gid=0#gid=0" target="_blank" rel="noreferrer">
-              <span class="quick-tag">Planejamento 2026</span>
-              <h3>Pregões, IRPs e contratos vigentes</h3>
-              <p>Acesse a planilha de acompanhamento.</p>
-              <b>↗</b>
+              <img class="quick-logo pra-logo" src="pra-ufpb.webp" alt="PRA UFPB" />
+              <div>
+                <span class="quick-tag">Planejamento 2026 - PRA</span>
+                <h3>Pregões, IRPs e contratos vigentes</h3>
+                <p>Acesse a planilha de acompanhamento.</p>
+              </div>
+              <b aria-hidden="true">↗</b>
             </a>
-            <a href="https://catalogo.compras.gov.br/cnbs-web/busca" target="_blank" rel="noreferrer">
-              <span class="quick-tag">Compras.gov.br</span>
-              <h3>Catálogo CATMAT/CATSER</h3>
-              <p>Busque materiais e serviços no catálogo oficial.</p>
-              <b>↗</b>
+            <a class="catalog-link" href="https://catalogo.compras.gov.br/cnbs-web/busca" target="_blank" rel="noreferrer">
+              <img class="quick-logo compras-logo" src="comprasgov.png" alt="Compras.gov.br" />
+              <div>
+                <span class="quick-tag">Compras.gov.br</span>
+                <h3>Catálogo CATMAT/CATSER</h3>
+                <p>Busque materiais e serviços no catálogo oficial.</p>
+              </div>
+              <b aria-hidden="true">↗</b>
             </a>
           </article>
         </div>

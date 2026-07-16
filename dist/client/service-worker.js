@@ -1,4 +1,4 @@
-const CACHE_NAME = 'consulta-aquisicoes-v1.0.2';
+const CACHE_NAME = 'consulta-aquisicoes-v1.0.2-layout-2';
 const ASSETS = [
   './',
   './index.html',
@@ -7,6 +7,10 @@ const ASSETS = [
   './manifest.json',
   './icon-192.png',
   './icon-512.png',
+  './comprasgov.png',
+  './sipac-ufpb.webp',
+  './portal-transparencia.webp',
+  './pra-ufpb.webp',
   './uasgs.json'
 ];
 

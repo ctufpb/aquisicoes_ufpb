@@ -6,6 +6,7 @@
   const FORM_KEY = 'pregao-facil.form';
   const RECENT_KEY = 'pregao-facil.recent';
   const FAVORITES_KEY = 'pregao-facil.favorite-uasgs';
+  const PNCP_CACHE_KEY = 'pregao-facil.pncp-purchases';
   const UFPB_CNPJ = '24098477000110';
   const UFPB_FALLBACK = [
     { c: '153065', n: 'UNIVERSIDADE FEDERAL DA PARAÍBA - CAMPUS I', uf: 'PB', a: 1, u: 1, o: UFPB_CNPJ },
@@ -30,7 +31,8 @@
   let installPrompt = null;
   let installed = window.matchMedia('(display-mode: standalone)').matches || Boolean(navigator.standalone);
   let toastTimer = 0;
-  const pncpPurchaseCache = new Map();
+  const storedPncpPurchases = readStored(PNCP_CACHE_KEY, {});
+  const pncpPurchaseCache = new Map(Object.entries(storedPncpPurchases && typeof storedPncpPurchases === 'object' ? storedPncpPurchases : {}));
 
   const fields = {
     uasgInput: $('uasgInput'),
@@ -250,7 +252,6 @@
   function renderRecent() {
     const list = $('recentList');
     list.replaceChildren();
-    $('recentEmpty').hidden = recent.length > 0;
     for (const entry of recent) {
       const button = document.createElement('button');
       button.type = 'button';
@@ -276,15 +277,115 @@
     return `https://www2.comprasnet.gov.br/siasgnet-atasrp/public/pesquisarItemSRP.do?method=iniciar&parametro.identificacaoCompra.numeroUasg=${info.uasg}&parametro.identificacaoCompra.modalidadeCompra=5&parametro.identificacaoCompra.numeroCompra=${number}&parametro.identificacaoCompra.anoCompra=${info.year}`;
   }
 
+  function wait(milliseconds) {
+    return new Promise(resolve => window.setTimeout(resolve, milliseconds));
+  }
+
+  async function fetchJsonOnce(url) {
+    const controller = new AbortController();
+    const timeout = window.setTimeout(() => controller.abort(), 15000);
+    try {
+      const response = await fetch(url, {
+        headers: { accept: 'application/json' },
+        cache: 'no-store',
+        signal: controller.signal
+      });
+      const contentType = response.headers.get('content-type') || '';
+      if (!response.ok || !contentType.includes('application/json')) throw new Error(`Resposta ${response.status}`);
+      return response.json();
+    } finally {
+      window.clearTimeout(timeout);
+    }
+  }
+
   async function fetchPncpJson(url, errorMessage) {
-    const response = await fetch(url, { headers: { accept: 'application/json' } });
-    if (!response.ok) throw new Error(errorMessage);
-    return response.json();
+    const hosted = window.location.hostname.endsWith('.chatgpt.site');
+    const routes = hosted
+      ? [
+          { url: `/pncp-proxy?target=${encodeURIComponent(url)}`, attempts: 2 },
+          { url, attempts: 2 }
+        ]
+      : [{ url, attempts: 3 }];
+
+    for (const route of routes) {
+      for (let attempt = 1; attempt <= route.attempts; attempt += 1) {
+        try {
+          return await fetchJsonOnce(route.url);
+        } catch {
+          if (attempt < route.attempts) await wait(attempt * 650);
+        }
+      }
+    }
+    throw new Error(errorMessage);
+  }
+
+  function rememberPncpPurchase(cacheKey, purchase) {
+    const compact = {
+      anoCompra: purchase.anoCompra,
+      sequencialCompra: purchase.sequencialCompra,
+      numeroControlePNCP: purchase.numeroControlePNCP || ''
+    };
+    pncpPurchaseCache.set(cacheKey, compact);
+    const entries = [...pncpPurchaseCache.entries()].slice(-80);
+    try {
+      localStorage.setItem(PNCP_CACHE_KEY, JSON.stringify(Object.fromEntries(entries)));
+    } catch {
+      // O cache em memória ainda evita nova pesquisa durante esta sessão.
+    }
+    return compact;
+  }
+
+  async function findPurchaseOnComprasGov(info, cnpj) {
+    const purchaseYear = Number(info.year);
+    for (const publicationYear of [purchaseYear, purchaseYear + 1]) {
+      let page = 1;
+      let totalPages = 1;
+      do {
+        const params = new URLSearchParams({
+          pagina: String(page),
+          tamanhoPagina: '500',
+          unidadeOrgaoCodigoUnidade: info.uasg,
+          orgaoEntidadeCnpj: cnpj,
+          dataPublicacaoPncpInicial: `${publicationYear}-01-01`,
+          dataPublicacaoPncpFinal: `${publicationYear}-12-31`,
+          codigoModalidade: '5'
+        });
+        const result = await fetchPncpJson(
+          `https://dadosabertos.compras.gov.br/modulo-contratacoes/1_consultarContratacoes_PNCP_14133?${params}`,
+          'A pesquisa oficial do Compras.gov.br não respondeu.'
+        );
+        const purchase = (result.resultado || []).find(record =>
+          String(record.idCompra || '') === info.key ||
+          (
+            String(record.numeroCompra || '').padStart(5, '0') === info.tender &&
+            Number(record.anoCompraPncp) === purchaseYear &&
+            String(record.unidadeOrgaoCodigoUnidade || '') === info.uasg
+          )
+        );
+        if (purchase) {
+          return {
+            anoCompra: purchase.anoCompraPncp,
+            sequencialCompra: purchase.sequencialCompraPncp,
+            numeroControlePNCP: purchase.numeroControlePNCP || ''
+          };
+        }
+        totalPages = Math.min(Number(result.totalPaginas) || 1, 25);
+        page += 1;
+      } while (page <= totalPages);
+    }
+    return null;
   }
 
   async function findPncpPurchase(info, cnpj) {
     const cacheKey = `${cnpj}:${info.uasg}:${info.tender}:${info.year}`;
     if (pncpPurchaseCache.has(cacheKey)) return pncpPurchaseCache.get(cacheKey);
+
+    try {
+      const comprasGovPurchase = await findPurchaseOnComprasGov(info, cnpj);
+      if (comprasGovPurchase) return rememberPncpPurchase(cacheKey, comprasGovPurchase);
+    } catch {
+      // Se o Compras.gov.br estiver instável, a pesquisa segue pela API do PNCP.
+    }
 
     const purchaseYear = Number(info.year);
     for (const publicationYear of [purchaseYear, purchaseYear + 1]) {
@@ -310,8 +411,7 @@
           String(record.unidadeOrgao?.codigoUnidade || '') === info.uasg
         );
         if (purchase) {
-          pncpPurchaseCache.set(cacheKey, purchase);
-          return purchase;
+          return rememberPncpPurchase(cacheKey, purchase);
         }
         totalPages = Math.min(Number(result.totalPaginas) || 1, 25);
         page += 1;
@@ -326,8 +426,6 @@
     if (!info.key) return showToast('Preencha UASG, pregão e ano para localizar o edital.');
     if (!unit?.o) return showToast('Não foi possível identificar o CNPJ desta UASG. Escolha a unidade novamente na lista.');
 
-    const popup = window.open('about:blank', '_blank');
-    if (popup) popup.opener = null;
     const button = $('noticeBtn');
     const status = $('noticeStatus');
     const originalText = button.innerHTML;
@@ -350,12 +448,17 @@
 
       const label = `${info.uasg} · Edital PE ${info.tender}/${info.year}`;
       remember(label, notice.url);
-      status.textContent = 'Edital localizado. O download foi aberto em uma nova aba.';
-      if (popup && !popup.closed) popup.location.href = notice.url;
-      else window.location.href = notice.url;
+      status.textContent = 'Edital localizado. O download foi iniciado.';
+      const downloadLink = document.createElement('a');
+      downloadLink.href = notice.url;
+      downloadLink.download = '';
+      downloadLink.rel = 'noreferrer';
+      downloadLink.hidden = true;
+      document.body.append(downloadLink);
+      downloadLink.click();
+      downloadLink.remove();
       showToast('Edital localizado no PNCP.');
     } catch (error) {
-      if (popup && !popup.closed) popup.close();
       const message = error instanceof Error ? error.message : 'Não foi possível localizar o edital.';
       status.textContent = message;
       showToast(message);
