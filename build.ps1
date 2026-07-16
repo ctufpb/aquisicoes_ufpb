@@ -56,7 +56,14 @@ async function ensureStorageSchema(db) {
         pncp_sequence INTEGER NOT NULL,
         ata_sequence INTEGER,
         updated_at INTEGER NOT NULL
-      )`)
+      )`),
+      db.prepare(`CREATE TABLE IF NOT EXISTS device_visits (
+        visit_key TEXT PRIMARY KEY NOT NULL,
+        device_id TEXT NOT NULL,
+        visit_date TEXT NOT NULL,
+        last_seen INTEGER NOT NULL
+      )`),
+      db.prepare('CREATE INDEX IF NOT EXISTS device_visits_date_idx ON device_visits (visit_date)')
     ]).then(() => true).catch(() => false);
   }
   return storageSchemaPromise;
@@ -189,6 +196,55 @@ async function writePermanentPncpLinks(db, links, now) {
   }
 }
 
+function saoPauloDateKey(date = new Date()) {
+  const parts = new Intl.DateTimeFormat('en-US', {
+    timeZone: 'America/Sao_Paulo',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit'
+  }).formatToParts(date);
+  const value = type => parts.find(part => part.type === type)?.value || '';
+  return `${value('year')}-${value('month')}-${value('day')}`;
+}
+
+function analyticsDateKey(daysAgo) {
+  return saoPauloDateKey(new Date(Date.now() - daysAgo * 86400000));
+}
+
+async function readAnalyticsSummary(db) {
+  if (!(await ensureStorageSchema(db))) return null;
+  try {
+    const result = await db.prepare(`SELECT
+      COUNT(DISTINCT CASE WHEN visit_date = ? THEN device_id END) AS today,
+      COUNT(DISTINCT CASE WHEN visit_date >= ? THEN device_id END) AS week,
+      COUNT(DISTINCT CASE WHEN visit_date >= ? THEN device_id END) AS month
+      FROM device_visits`
+    ).bind(analyticsDateKey(0), analyticsDateKey(6), analyticsDateKey(29)).first();
+    return {
+      today: Number(result?.today) || 0,
+      week: Number(result?.week) || 0,
+      month: Number(result?.month) || 0
+    };
+  } catch {
+    return null;
+  }
+}
+
+async function recordAnonymousDeviceVisit(db, deviceId) {
+  if (!(await ensureStorageSchema(db))) return null;
+  const visitDate = analyticsDateKey(0);
+  const now = Math.floor(Date.now() / 1000);
+  try {
+    await db.prepare(`INSERT INTO device_visits (visit_key, device_id, visit_date, last_seen)
+      VALUES (?, ?, ?, ?)
+      ON CONFLICT(visit_key) DO UPDATE SET last_seen = excluded.last_seen`
+    ).bind(`${visitDate}:${deviceId}`, deviceId, visitDate, now).run();
+    return readAnalyticsSummary(db);
+  } catch {
+    return null;
+  }
+}
+
 const API_CORS_HEADERS = {
   'access-control-allow-origin': '*',
   'access-control-allow-methods': 'GET, POST, OPTIONS',
@@ -269,9 +325,33 @@ function pncpLinksResponse(links) {
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
-    const apiPath = ['/edital-cache', '/pncp-link-cache', '/pncp-proxy'].includes(url.pathname);
+    const apiPath = ['/edital-cache', '/pncp-link-cache', '/pncp-proxy', '/analytics/visit'].includes(url.pathname);
     if (apiPath && request.method === 'OPTIONS') {
       return new Response(null, { status: 204, headers: API_CORS_HEADERS });
+    }
+    if (url.pathname === '/analytics/visit') {
+      if (request.method === 'GET') {
+        const summary = await readAnalyticsSummary(env.DB);
+        return summary
+          ? jsonResponse(summary)
+          : jsonResponse({ error: 'Contagem temporariamente indisponível.' }, 503);
+      }
+
+      if (request.method === 'POST') {
+        let body;
+        try { body = await request.json(); }
+        catch { return jsonResponse({ error: 'Conteúdo inválido.' }, 400); }
+        const deviceId = String(body?.deviceId || '');
+        if (!/^[a-f0-9-]{20,64}$/i.test(deviceId)) {
+          return jsonResponse({ error: 'Identificador anônimo inválido.' }, 400);
+        }
+        const summary = await recordAnonymousDeviceVisit(env.DB, deviceId);
+        return summary
+          ? jsonResponse(summary, 201)
+          : jsonResponse({ error: 'Contagem temporariamente indisponível.' }, 503);
+      }
+
+      return jsonResponse({ error: 'Método não permitido.' }, 405, { allow: 'GET, POST' });
     }
     if (url.pathname === '/pncp-link-cache') {
       if (request.method === 'GET') {

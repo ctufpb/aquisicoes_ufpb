@@ -22,6 +22,13 @@
       "when": 1784256000000,
       "tag": "0002_permanent_pncp_links",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1784259000000,
+      "tag": "0003_anonymous_device_visits",
+      "breakpoints": true
     }
   ]
 }

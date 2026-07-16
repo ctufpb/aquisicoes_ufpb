@@ -5,6 +5,7 @@
   const FORM_KEY = 'pregao-facil.form';
   const RECENT_KEY = 'pregao-facil.recent';
   const FAVORITES_KEY = 'pregao-facil.favorite-uasgs';
+  const DEVICE_ID_KEY = 'pregao-facil.anonymous-device-id';
   const UFPB_CNPJ = '24098477000110';
   const SHARED_API_ORIGIN = 'https://pregao-facil-ufpb.lincolnpontes.chatgpt.site';
   const DEFAULT_FORM_YEAR = '2026';
@@ -73,6 +74,40 @@
     return window.location.hostname.endsWith('.chatgpt.site')
       ? normalizedPath
       : `${SHARED_API_ORIGIN}${normalizedPath}`;
+  }
+
+  function anonymousDeviceId() {
+    try {
+      const stored = localStorage.getItem(DEVICE_ID_KEY);
+      if (/^[a-f0-9-]{20,64}$/i.test(stored || '')) return stored;
+      const created = typeof crypto.randomUUID === 'function'
+        ? crypto.randomUUID()
+        : Array.from(crypto.getRandomValues(new Uint8Array(16)), byte => byte.toString(16).padStart(2, '0')).join('');
+      localStorage.setItem(DEVICE_ID_KEY, created);
+      return created;
+    } catch {
+      return typeof crypto.randomUUID === 'function' ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+    }
+  }
+
+  async function recordAnonymousVisit() {
+    const format = new Intl.NumberFormat('pt-BR');
+    try {
+      const response = await fetch(sharedApiUrl('/analytics/visit'), {
+        method: 'POST',
+        cache: 'no-store',
+        headers: { accept: 'application/json', 'content-type': 'application/json' },
+        body: JSON.stringify({ deviceId: anonymousDeviceId() })
+      });
+      if (!response.ok) throw new Error('Contagem indisponível');
+      const summary = await response.json();
+      $('usageToday').textContent = format.format(Number(summary.today) || 0);
+      $('usageWeek').textContent = format.format(Number(summary.week) || 0);
+      $('usageMonth').textContent = format.format(Number(summary.month) || 0);
+      $('usageStatus').textContent = 'Dispositivos únicos aproximados; nenhum dado pessoal é armazenado.';
+    } catch {
+      $('usageStatus').textContent = 'Contagem temporariamente indisponível.';
+    }
   }
 
   function isFourDigitYear(value) {
@@ -943,6 +978,7 @@
   renderRecent();
   update();
   loadUasgs();
+  recordAnonymousVisit();
   if (installed) $('installLabel').textContent = 'Instalado';
   if ('serviceWorker' in navigator) navigator.serviceWorker.register('service-worker.js').catch(() => undefined);
 })();

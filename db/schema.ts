@@ -25,3 +25,10 @@ export const pncpLinkCache = sqliteTable("pncp_link_cache", {
   ataSequence: integer("ata_sequence"),
   updatedAt: integer("updated_at").notNull(),
 });
+
+export const deviceVisits = sqliteTable("device_visits", {
+  visitKey: text("visit_key").primaryKey(),
+  deviceId: text("device_id").notNull(),
+  visitDate: text("visit_date").notNull(),
+  lastSeen: integer("last_seen").notNull(),
+});

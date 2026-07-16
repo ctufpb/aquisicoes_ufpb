@@ -18,3 +18,5 @@ As respostas públicas usadas durante a pesquisa têm um cache temporário compa
 - `build.ps1`: prepara a publicação e o serviço de consulta.
 
 Não há login próprio, Google Sheets, sincronização de dados pessoais ou `node_modules`.
+
+O rodapé exibe uma contagem agregada e aproximada de dispositivos que abriram o app. O banco guarda somente um identificador aleatório criado pelo navegador e a data de acesso; não registra nome, e-mail ou IP.
