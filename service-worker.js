@@ -1,4 +1,4 @@
-const CACHE_NAME = 'consulta-aquisicoes-v1.0.3-guidance';
+const CACHE_NAME = 'consulta-aquisicoes-v1.0.3-shared';
 const ASSETS = [
   './',
   './index.html',

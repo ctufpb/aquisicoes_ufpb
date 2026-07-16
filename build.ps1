@@ -189,12 +189,20 @@ async function writePermanentPncpLinks(db, links, now) {
   }
 }
 
+const API_CORS_HEADERS = {
+  'access-control-allow-origin': '*',
+  'access-control-allow-methods': 'GET, POST, OPTIONS',
+  'access-control-allow-headers': 'Accept, Content-Type',
+  'access-control-expose-headers': 'X-Cache-Scope, X-Cache-Status'
+};
+
 function jsonResponse(value, status = 200, extraHeaders = {}) {
   return new Response(JSON.stringify(value), {
     status,
     headers: {
       'cache-control': 'no-store',
       'content-type': 'application/json; charset=utf-8',
+      ...API_CORS_HEADERS,
       ...extraHeaders
     }
   });
@@ -261,6 +269,10 @@ function pncpLinksResponse(links) {
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
+    const apiPath = ['/edital-cache', '/pncp-link-cache', '/pncp-proxy'].includes(url.pathname);
+    if (apiPath && request.method === 'OPTIONS') {
+      return new Response(null, { status: 204, headers: API_CORS_HEADERS });
+    }
     if (url.pathname === '/pncp-link-cache') {
       if (request.method === 'GET') {
         const purchaseKey = String(url.searchParams.get('compra') || '');
@@ -355,6 +367,7 @@ export default {
           headers: {
             'cache-control': `public, max-age=${cacheSeconds}`,
             'content-type': cached.contentType || 'application/json; charset=utf-8',
+            ...API_CORS_HEADERS,
             'x-cache-scope': 'shared-database',
             'x-cache-status': 'HIT'
           }
@@ -401,6 +414,7 @@ export default {
       });
       response.headers.set('cache-control', `public, max-age=${cacheSeconds}`);
       response.headers.set('content-type', 'application/json; charset=utf-8');
+      for (const [name, value] of Object.entries(API_CORS_HEADERS)) response.headers.set(name, value);
       response.headers.set('x-cache-scope', stored ? 'shared-database' : 'shared-unavailable');
       response.headers.set('x-cache-status', stored ? 'MISS' : 'BYPASS');
       return response;

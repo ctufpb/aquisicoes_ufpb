@@ -7,6 +7,7 @@
   const RECENT_KEY = 'pregao-facil.recent';
   const FAVORITES_KEY = 'pregao-facil.favorite-uasgs';
   const UFPB_CNPJ = '24098477000110';
+  const SHARED_API_ORIGIN = 'https://pregao-facil-ufpb.lincolnpontes.chatgpt.site';
   const EMPENHO_WEB_START_YEAR = 2021;
   const CURRENT_PREGAO_START_YEAR = 2022;
   const CURRENT_ONLY_START_YEAR = 2024;
@@ -64,6 +65,13 @@
 
   function onlyDigits(value) {
     return String(value || '').replace(/\D/g, '');
+  }
+
+  function sharedApiUrl(path) {
+    const normalizedPath = path.startsWith('/') ? path : `/${path}`;
+    return window.location.hostname.endsWith('.chatgpt.site')
+      ? normalizedPath
+      : `${SHARED_API_ORIGIN}${normalizedPath}`;
   }
 
   function isFourDigitYear(value) {
@@ -382,10 +390,10 @@
   }
 
   async function fetchPncpJson(url, errorMessage) {
-    const hosted = window.location.hostname.endsWith('.chatgpt.site');
-    const routes = hosted
-      ? [{ url: `/pncp-proxy?target=${encodeURIComponent(url)}`, attempts: 2 }]
-      : [{ url, attempts: 3 }];
+    const routes = [
+      { url: sharedApiUrl(`/pncp-proxy?target=${encodeURIComponent(url)}`), attempts: 2 },
+      { url, attempts: 1 }
+    ];
 
     for (const route of routes) {
       for (let attempt = 1; attempt <= route.attempts; attempt += 1) {
@@ -497,9 +505,8 @@
   }
 
   async function getPermanentNotice(purchaseKey) {
-    if (!window.location.hostname.endsWith('.chatgpt.site')) return null;
     try {
-      const response = await fetch(`/edital-cache?compra=${encodeURIComponent(purchaseKey)}`, {
+      const response = await fetch(sharedApiUrl(`/edital-cache?compra=${encodeURIComponent(purchaseKey)}`), {
         cache: 'no-store',
         headers: { accept: 'application/json' }
       });
@@ -512,9 +519,8 @@
   }
 
   async function savePermanentNotice(info, cnpj, purchase, noticeUrl) {
-    if (!window.location.hostname.endsWith('.chatgpt.site')) return false;
     try {
-      const response = await fetch('/edital-cache', {
+      const response = await fetch(sharedApiUrl('/edital-cache'), {
         method: 'POST',
         headers: { accept: 'application/json', 'content-type': 'application/json' },
         body: JSON.stringify({
@@ -532,9 +538,8 @@
   }
 
   async function savePermanentPncpLinks(info, cnpj, purchase, ataSequence = null) {
-    if (!window.location.hostname.endsWith('.chatgpt.site')) return false;
     try {
-      const response = await fetch('/pncp-link-cache', {
+      const response = await fetch(sharedApiUrl('/pncp-link-cache'), {
         method: 'POST',
         headers: { accept: 'application/json', 'content-type': 'application/json' },
         body: JSON.stringify({
@@ -579,10 +584,10 @@
     const button = $('noticeBtn');
     const originalText = button.innerHTML;
     button.disabled = true;
-    button.textContent = 'Localizando edital…';
+    button.textContent = 'Verificando histórico…';
     status.classList.add('loading');
     status.dataset.state = 'loading';
-    status.textContent = 'Consultando a publicação e os documentos no PNCP…';
+    status.textContent = 'Verificando o histórico compartilhado…';
 
     try {
       const storedNotice = await getPermanentNotice(info.key);
@@ -597,6 +602,9 @@
         showToast('Edital localizado no histórico compartilhado.');
         return;
       }
+
+      button.textContent = 'Localizando edital…';
+      status.textContent = 'Ainda não estava salvo. Consultando a publicação e os documentos no PNCP…';
 
       const purchase = await findPncpPurchase(info, unit.o);
       if (!purchase) throw noticeError('not-found', 'Ainda não publicado: esta contratação não foi localizada nas bases oficiais. Use “Contratação” para conferir no ComprasNet.');

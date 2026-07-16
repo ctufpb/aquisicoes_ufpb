@@ -35,8 +35,15 @@
         pregao: query.get('pregao') || '',
         ano: query.get('ano') || ''
       };
-      const hosted = location.hostname.endsWith('.chatgpt.site');
+      const SHARED_API_ORIGIN = 'https://pregao-facil-ufpb.lincolnpontes.chatgpt.site';
       const wait = milliseconds => new Promise(resolve => setTimeout(resolve, milliseconds));
+
+      function sharedApiUrl(path) {
+        const normalizedPath = path.startsWith('/') ? path : `/${path}`;
+        return location.hostname.endsWith('.chatgpt.site')
+          ? normalizedPath
+          : `${SHARED_API_ORIGIN}${normalizedPath}`;
+      }
 
       function fail(message) {
         document.body.classList.add('error');
@@ -45,24 +52,25 @@
       }
 
       async function fetchOfficial(target) {
-        const route = hosted ? `/pncp-proxy?target=${encodeURIComponent(target)}` : target;
-        for (let attempt = 1; attempt <= 2; attempt += 1) {
-          try {
-            const response = await fetch(route, { headers: { accept: 'application/json' }, cache: 'no-store' });
-            if (!response.ok) throw new Error(`Resposta ${response.status}`);
-            return await response.json();
-          } catch (error) {
-            if (attempt === 2) throw error;
-            await wait(650);
+        const routes = [sharedApiUrl(`/pncp-proxy?target=${encodeURIComponent(target)}`), target];
+        for (const route of routes) {
+          for (let attempt = 1; attempt <= 2; attempt += 1) {
+            try {
+              const response = await fetch(route, { headers: { accept: 'application/json' }, cache: 'no-store' });
+              if (!response.ok) throw new Error(`Resposta ${response.status}`);
+              return await response.json();
+            } catch (error) {
+              if (attempt === 2 && route === routes.at(-1)) throw error;
+              if (attempt < 2) await wait(650);
+            }
           }
         }
         return null;
       }
 
       async function readPermanentLinks() {
-        if (!hosted) return null;
         try {
-          const response = await fetch(`/pncp-link-cache?compra=${encodeURIComponent(data.compra)}`, { cache: 'no-store' });
+          const response = await fetch(sharedApiUrl(`/pncp-link-cache?compra=${encodeURIComponent(data.compra)}`), { cache: 'no-store' });
           return response.ok ? await response.json() : null;
         } catch {
           return null;
@@ -70,9 +78,8 @@
       }
 
       async function savePermanentLinks(cnpj, purchase, ataSequence) {
-        if (!hosted) return;
         try {
-          await fetch('/pncp-link-cache', {
+          await fetch(sharedApiUrl('/pncp-link-cache'), {
             method: 'POST',
             headers: { 'content-type': 'application/json' },
             body: JSON.stringify({
