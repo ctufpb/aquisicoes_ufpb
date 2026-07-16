@@ -50,6 +50,7 @@
     sipacTermYear: $('sipacTermYearInput'),
     sipacGuide: $('sipacGuideInput'),
     sipacGuideYear: $('sipacGuideYearInput'),
+    transparencyUasg: $('transparencyUasgInput'),
     management: $('managementInput'),
     transparencyYear: $('transparencyYearInput'),
     commitment: $('commitmentInput')
@@ -129,6 +130,7 @@
       sipacTermYear: fields.sipacTermYear.value,
       sipacGuide: fields.sipacGuide.value,
       sipacGuideYear: fields.sipacGuideYear.value,
+      transparencyUasg: fields.transparencyUasg.value,
       management: fields.management.value,
       transparencyYear: fields.transparencyYear.value,
       commitment: fields.commitment.value
@@ -154,6 +156,24 @@
       purchaseUrl: key ? `https://cnetmobile.estaleiro.serpro.gov.br/comprasnet-web/public/compras/acompanhamento-compra?compra=${key}` : '',
       itemUrl: key ? `https://cnetmobile.estaleiro.serpro.gov.br/comprasnet-web/public/compras/acompanhamento-compra/item/${item}?compra=${key}` : ''
     };
+  }
+
+  function transparencyUasgCode() {
+    return onlyDigits(fields.transparencyUasg.value).slice(0, 6);
+  }
+
+  function isUfpbUnit(record) {
+    return Boolean(record && record.o === UFPB_CNPJ);
+  }
+
+  function applyManagementForUnit(record) {
+    if (isUfpbUnit(record)) {
+      fields.management.value = '15231';
+      fields.management.dataset.autofilled = 'true';
+    } else if (fields.management.dataset.autofilled === 'true') {
+      fields.management.value = '';
+      fields.management.dataset.autofilled = 'false';
+    }
   }
 
   function pncpResolverUrl(kind, info, unit) {
@@ -205,6 +225,18 @@
       : dataReady
         ? 'Digite o código ou o nome e escolha uma UASG.'
         : 'Carregando base de UASGs…';
+    const transparencyUasg = transparencyUasgCode();
+    const transparencyUnit = uasgs.find(record => record.c === transparencyUasg);
+    $('transparencyUasgHelp').textContent = transparencyUnit
+      ? transparencyUnit.n
+      : dataReady
+        ? 'Digite o código ou o nome e escolha uma UASG.'
+        : 'Carregando base de UASGs…';
+    $('managementHelp').textContent = isUfpbUnit(transparencyUnit)
+      ? 'Gestão 15231 preenchida automaticamente para a UFPB.'
+      : transparencyUnit
+        ? 'Confirme a gestão SIAFI deste órgão.'
+        : 'A gestão SIAFI não é igual para todos os órgãos.';
     $('tenderHelp').textContent = mode === 'current' && info.tender ? `Será usado ${info.tender}` : 'Número sem o ano';
     $('itemBtn').childNodes[0].nodeValue = `Ver item ${info.item} `;
     const purchaseYear = isFourDigitYear(fields.year.value) ? Number(fields.year.value) : 0;
@@ -225,7 +257,8 @@
     modeYearAdvisory.hidden = !modeYearMessage;
     modeYearAdvisory.textContent = modeYearMessage;
     const transparencyYear = isFourDigitYear(fields.transparencyYear.value) ? fields.transparencyYear.value : '';
-    $('transparencyPreview').textContent = `UASG ${info.uasg || '—'} · ${transparencyYear || '—'}NE${onlyDigits(fields.commitment.value).padStart(6, '0')}`;
+    const managementPreview = onlyDigits(fields.management.value);
+    $('transparencyPreview').textContent = `UASG ${transparencyUasg || '—'} · Gestão ${managementPreview ? managementPreview.padStart(5, '0') : '—'} · ${transparencyYear || '—'}NE${onlyDigits(fields.commitment.value).padStart(6, '0')}`;
     const historicalMessage = 'Atenção: para anos até 2020, confira também a faixa histórica 800001–999999. O Empenho Web passou a estruturar esses dados a partir de 2021.';
     const sipacHistorical = isFourDigitYear(fields.sipacCommitmentYear.value) && Number(fields.sipacCommitmentYear.value) < EMPENHO_WEB_START_YEAR;
     const transparencyHistorical = isFourDigitYear(fields.transparencyYear.value) && Number(fields.transparencyYear.value) < EMPENHO_WEB_START_YEAR;
@@ -254,10 +287,18 @@
     update();
   }
 
-  function chooseUasg(record) {
-    fields.uasgInput.value = record.c;
-    $('uasgSuggestions').hidden = true;
-    fields.uasgInput.setAttribute('aria-expanded', 'false');
+  function chooseUasg(record, input = fields.uasgInput, box = $('uasgSuggestions')) {
+    input.value = record.c;
+    box.hidden = true;
+    input.setAttribute('aria-expanded', 'false');
+    update();
+  }
+
+  function chooseTransparencyUasg(record) {
+    fields.transparencyUasg.value = record.c;
+    applyManagementForUnit(record);
+    $('transparencyUasgSuggestions').hidden = true;
+    fields.transparencyUasg.setAttribute('aria-expanded', 'false');
     update();
   }
 
@@ -269,10 +310,16 @@
     );
   }
 
-  function matchingUasgs() {
-    const query = normalizeText(fields.uasgInput.value);
-    if (!query || /^\d{6}$/.test(query)) {
+  function matchingUasgs(value) {
+    const query = normalizeText(value);
+    if (!query) {
       return rankFavorites(uasgs.filter(record => record.a)).slice(0, 10);
+    }
+
+    if (/^\d{6}$/.test(query)) {
+      const exact = uasgs.find(record => record.c === query);
+      const favoritesWithoutExact = rankFavorites(uasgs.filter(record => record.a && record.c !== query));
+      return exact ? [exact, ...favoritesWithoutExact].slice(0, 10) : favoritesWithoutExact.slice(0, 10);
     }
 
     const numeric = onlyDigits(query);
@@ -287,29 +334,28 @@
     return [...rankFavorites(prefix), ...rankFavorites(contains)].slice(0, 10);
   }
 
-  function toggleFavorite(record) {
+  function toggleFavorite(record, rerender) {
     if (favorites.has(record.c)) favorites.delete(record.c);
     else favorites.add(record.c);
     localStorage.setItem(FAVORITES_KEY, JSON.stringify([...favorites]));
-    renderSuggestions();
+    rerender();
     showToast(favorites.has(record.c) ? `UASG ${record.c} adicionada aos favoritos.` : `UASG ${record.c} removida dos favoritos.`);
   }
 
-  function renderSuggestions() {
-    const box = $('uasgSuggestions');
+  function renderUasgSuggestions(input, box, selectedCode, choose, rerender) {
     box.replaceChildren();
-    const matches = matchingUasgs();
+    const matches = matchingUasgs(input.value);
     for (const record of matches) {
       const row = document.createElement('div');
       row.className = 'suggestion-row';
       row.role = 'option';
-      row.setAttribute('aria-selected', String(record.c === purchaseInfo().uasg));
+      row.setAttribute('aria-selected', String(record.c === selectedCode));
 
       const selectButton = document.createElement('button');
       selectButton.type = 'button';
       selectButton.className = 'suggestion-main';
       selectButton.addEventListener('mousedown', event => event.preventDefault());
-      selectButton.addEventListener('click', () => chooseUasg(record));
+      selectButton.addEventListener('click', () => choose(record));
 
       const code = document.createElement('span');
       code.className = favorites.has(record.c) ? 'uasg-code favorite' : 'uasg-code';
@@ -328,13 +374,21 @@
       favoriteButton.title = isFavorite ? 'Remover dos favoritos' : 'Adicionar aos favoritos';
       favoriteButton.setAttribute('aria-label', `${favoriteButton.title}: UASG ${record.c}`);
       favoriteButton.addEventListener('mousedown', event => event.preventDefault());
-      favoriteButton.addEventListener('click', () => toggleFavorite(record));
+      favoriteButton.addEventListener('click', () => toggleFavorite(record, rerender));
 
       row.append(selectButton, favoriteButton);
       box.append(row);
     }
     box.hidden = matches.length === 0;
-    fields.uasgInput.setAttribute('aria-expanded', String(matches.length > 0));
+    input.setAttribute('aria-expanded', String(matches.length > 0));
+  }
+
+  function renderSuggestions() {
+    renderUasgSuggestions(fields.uasgInput, $('uasgSuggestions'), purchaseInfo().uasg, record => chooseUasg(record), renderSuggestions);
+  }
+
+  function renderTransparencySuggestions() {
+    renderUasgSuggestions(fields.transparencyUasg, $('transparencyUasgSuggestions'), transparencyUasgCode(), chooseTransparencyUasg, renderTransparencySuggestions);
   }
 
   function renderRecent() {
@@ -662,7 +716,10 @@
     fields.sipacTermYear.value = stored.sipacTermYear || DEFAULT_FORM_YEAR;
     fields.sipacGuide.value = stored.sipacGuide || '123';
     fields.sipacGuideYear.value = stored.sipacGuideYear || DEFAULT_FORM_YEAR;
+    fields.transparencyUasg.value = stored.transparencyUasg || '153065';
     fields.management.value = stored.management || '15231';
+    const restoredTransparencyUnit = uasgs.find(record => record.c === onlyDigits(fields.transparencyUasg.value));
+    fields.management.dataset.autofilled = String(isUfpbUnit(restoredTransparencyUnit) && fields.management.value === '15231');
     fields.transparencyYear.value = stored.transparencyYear || DEFAULT_FORM_YEAR;
     fields.commitment.value = stored.commitment || '1234';
     setMode(stored.mode);
@@ -721,6 +778,16 @@
       $('uasgSuggestions').hidden = true;
       fields.uasgInput.setAttribute('aria-expanded', 'false');
     }, 140));
+    fields.transparencyUasg.addEventListener('focus', renderTransparencySuggestions);
+    fields.transparencyUasg.addEventListener('input', renderTransparencySuggestions);
+    fields.transparencyUasg.addEventListener('blur', () => window.setTimeout(() => {
+      $('transparencyUasgSuggestions').hidden = true;
+      fields.transparencyUasg.setAttribute('aria-expanded', 'false');
+      const record = uasgs.find(unit => unit.c === transparencyUasgCode());
+      if (record) applyManagementForUnit(record);
+      update();
+    }, 140));
+    fields.management.addEventListener('input', () => { fields.management.dataset.autofilled = 'false'; });
 
     bindEnter([fields.uasgInput, fields.tender, fields.year], () => {
       if (mode === 'current') $('purchaseBtn').click();
@@ -734,7 +801,11 @@
     bindEnter([fields.sipacCommitment, fields.sipacCommitmentYear], () => $('sipacCommitmentBtn').click());
     bindEnter([fields.sipacTerm, fields.sipacTermYear], () => $('sipacTermBtn').click());
     bindEnter([fields.sipacGuide, fields.sipacGuideYear], () => $('sipacGuideBtn').click());
-    bindEnter([fields.management, fields.transparencyYear, fields.commitment], () => $('transparencyBtn').click());
+    bindEnter([fields.transparencyUasg, fields.management, fields.transparencyYear, fields.commitment], () => {
+      const record = uasgs.find(unit => unit.c === transparencyUasgCode());
+      if (record) applyManagementForUnit(record);
+      $('transparencyBtn').click();
+    });
 
     $('purchaseBtn').addEventListener('click', () => {
       if (!requireFourDigitYear(fields.year)) return;
@@ -793,15 +864,26 @@
       openUrl(url, `SIPAC · Guia de movimentação ${number}/${year}`);
     });
     $('transparencyBtn').addEventListener('click', () => {
-      const info = purchaseInfo();
-      const management = onlyDigits(fields.management.value).padStart(5, '0');
+      const uasg = transparencyUasgCode();
+      const managementDigits = onlyDigits(fields.management.value);
       const year = requireFourDigitYear(fields.transparencyYear);
       if (!year) return;
+      if (uasg.length !== 6) {
+        fields.transparencyUasg.focus();
+        showToast('Informe uma UASG com 6 dígitos para consultar o empenho.');
+        return;
+      }
+      if (!managementDigits) {
+        fields.management.focus();
+        showToast('Informe a gestão SIAFI deste órgão.');
+        return;
+      }
+      const management = managementDigits.padStart(5, '0');
       const commitment = onlyDigits(fields.commitment.value).padStart(6, '0');
-      const url = info.uasg && management && commitment
-        ? `https://portaldatransparencia.gov.br/despesas/documento/empenho/${info.uasg}${management}${year}NE${commitment}`
+      const url = commitment
+        ? `https://portaldatransparencia.gov.br/despesas/documento/empenho/${uasg}${management}${year}NE${commitment}`
         : '';
-      openUrl(url, `Portal da Transparência · ${year}NE${commitment}`);
+      openUrl(url, `Portal da Transparência · ${uasg} · ${year}NE${commitment}`);
     });
     $('clearRecentBtn').addEventListener('click', () => {
       recent = [];

@@ -11,7 +11,7 @@
   <link rel="manifest" href="manifest.json" />
   <link rel="icon" href="icon-192.png" type="image/png" />
   <link rel="apple-touch-icon" href="icon-192.png" />
-  <link rel="stylesheet" href="style.css?v=1.0.3-shared" />
+  <link rel="stylesheet" href="style.css?v=1.0.3-transparency-uasg" />
 </head>
 <body>
   <div class="app-shell">
@@ -140,7 +140,16 @@
             </div>
             <div class="tool-card-body">
               <div class="transparency-fields">
-                <label class="field"><span>Gestão</span><input id="managementInput" inputmode="numeric" value="15231" maxlength="5" /></label>
+                <label class="field transparency-uasg-field">
+                  <span>UASG</span>
+                  <div class="combobox">
+                    <input id="transparencyUasgInput" value="153065" placeholder="Código ou nome da unidade" autocomplete="off" role="combobox" aria-controls="transparencyUasgSuggestions" aria-describedby="transparencyUasgHelp" aria-expanded="false" />
+                    <span class="search-glyph" aria-hidden="true">🔎</span>
+                    <div class="suggestions" id="transparencyUasgSuggestions" role="listbox" hidden></div>
+                  </div>
+                  <small class="field-help" id="transparencyUasgHelp">Carregando base de UASGs…</small>
+                </label>
+                <label class="field"><span>Gestão</span><input id="managementInput" inputmode="numeric" value="15231" maxlength="5" aria-describedby="managementHelp" /><small class="field-help" id="managementHelp">Automática para a UFPB.</small></label>
                 <label class="field"><span>Ano</span><input id="transparencyYearInput" inputmode="numeric" value="2026" minlength="4" maxlength="4" pattern="[0-9]{4}" aria-describedby="transparencyYearAdvisory" /></label>
                 <label class="field commitment-field"><span>Empenho</span><input id="commitmentInput" inputmode="numeric" value="1234" maxlength="6" /></label>
                 <button class="wide-tool-button" id="transparencyBtn" type="button">Consultar empenho <span>🔎</span></button>

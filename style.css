@@ -241,6 +241,10 @@ h1, h2, h3, p { margin: 0; }
 .inline-fields > button { display: inline-flex; align-items: center; gap: 8px; justify-content: center; }
 .inline-fields > button:hover, .wide-tool-button:hover { border-color: #8fb8ad; background: var(--brand-soft); transform: translateY(-1px); }
 .transparency-fields { display: grid; grid-template-columns: 0.72fr 0.68fr 1fr; gap: 11px; }
+.transparency-card { position: relative; z-index: 5; overflow: visible; }
+.transparency-card .service-art { border-radius: var(--radius) var(--radius) 0 0; }
+.transparency-uasg-field { grid-column: 1 / -1; }
+.transparency-card .suggestions { width: 100%; max-height: 360px; overflow-y: auto; }
 .wide-tool-button { display: flex; align-items: center; justify-content: space-between; width: 100%; margin-top: auto; }
 .transparency-fields .wide-tool-button { grid-column: 1 / -1; margin-top: 0; }
 .year-advisory { padding: 11px 13px; border: 1px solid #ecd19d; border-radius: 11px; color: #77480d; background: #fff8e9; font-size: 0.88rem; font-weight: 720; line-height: 1.45; }
@@ -331,6 +335,7 @@ h1, h2, h3, p { margin: 0; }
   .inline-fields > button { grid-column: auto; width: auto; min-height: 48px; padding: 0 7px; gap: 0; font-size: 0.74rem; }
   .inline-fields > button span { display: none; }
   .transparency-fields { grid-template-columns: 1fr 1fr; }
+  .transparency-uasg-field { grid-column: 1 / -1; }
   .transparency-fields .field { font-size: 0.78rem; }
   .transparency-fields input { min-height: 50px; font-size: 0.96rem; }
   .commitment-field { grid-column: 1; }
