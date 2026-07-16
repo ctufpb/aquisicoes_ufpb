@@ -1,0 +1,20 @@
+{
+  "version": "7",
+  "dialect": "sqlite",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "7",
+      "when": 1784168000000,
+      "tag": "0000_shared_api_cache",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1784169000000,
+      "tag": "0001_permanent_notice_cache",
+      "breakpoints": true
+    }
+  ]
+}

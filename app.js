@@ -6,8 +6,8 @@
   const FORM_KEY = 'pregao-facil.form';
   const RECENT_KEY = 'pregao-facil.recent';
   const FAVORITES_KEY = 'pregao-facil.favorite-uasgs';
-  const PNCP_CACHE_KEY = 'pregao-facil.pncp-purchases';
   const UFPB_CNPJ = '24098477000110';
+  const EMPENHO_WEB_START_YEAR = 2021;
   const UFPB_FALLBACK = [
     { c: '153065', n: 'UNIVERSIDADE FEDERAL DA PARAÍBA - CAMPUS I', uf: 'PB', a: 1, u: 1, o: UFPB_CNPJ },
     { c: '153066', n: 'PREFEITURA UNIVERSITÁRIA DA UFPB', uf: 'PB', a: 1, u: 1, o: UFPB_CNPJ },
@@ -31,8 +31,8 @@
   let installPrompt = null;
   let installed = window.matchMedia('(display-mode: standalone)').matches || Boolean(navigator.standalone);
   let toastTimer = 0;
-  const storedPncpPurchases = readStored(PNCP_CACHE_KEY, {});
-  const pncpPurchaseCache = new Map(Object.entries(storedPncpPurchases && typeof storedPncpPurchases === 'object' ? storedPncpPurchases : {}));
+  const pncpPurchaseCache = new Map();
+  try { localStorage.removeItem('pregao-facil.pncp-purchases'); } catch { /* Cache antigo removido quando permitido. */ }
 
   const fields = {
     uasgInput: $('uasgInput'),
@@ -51,9 +51,35 @@
     transparencyYear: $('transparencyYearInput'),
     commitment: $('commitmentInput')
   };
+  const yearFields = [
+    fields.year,
+    fields.sipacYear,
+    fields.sipacCommitmentYear,
+    fields.sipacTermYear,
+    fields.sipacGuideYear,
+    fields.transparencyYear
+  ];
 
   function onlyDigits(value) {
     return String(value || '').replace(/\D/g, '');
+  }
+
+  function isFourDigitYear(value) {
+    return /^\d{4}$/.test(String(value || ''));
+  }
+
+  function requireFourDigitYear(field) {
+    if (isFourDigitYear(field.value)) return field.value;
+    field.setAttribute('aria-invalid', 'true');
+    field.focus();
+    showToast('Informe o ano obrigatoriamente com 4 dígitos.');
+    return '';
+  }
+
+  function noticeError(state, message) {
+    const error = new Error(message);
+    error.noticeState = state;
+    return error;
   }
 
   function normalizeText(value) {
@@ -143,6 +169,9 @@
 
   function update() {
     const info = purchaseInfo();
+    for (const field of yearFields) {
+      field.setAttribute('aria-invalid', String(!isFourDigitYear(field.value)));
+    }
     const selected = uasgs.find(record => record.c === info.uasg);
     $('uasgHelp').textContent = selected
       ? selected.n
@@ -151,10 +180,18 @@
         : 'Carregando base de UASGs…';
     $('tenderHelp').textContent = mode === 'current' && info.tender ? `Será usado ${info.tender}` : 'Número sem o ano';
     $('itemBtn').childNodes[0].nodeValue = `Ver item ${info.item} `;
-    const transparencyYear = onlyDigits(fields.transparencyYear.value);
+    const transparencyYear = isFourDigitYear(fields.transparencyYear.value) ? fields.transparencyYear.value : '';
     $('transparencyPreview').textContent = `UASG ${info.uasg || '—'} · ${transparencyYear || '—'}NE${onlyDigits(fields.commitment.value).padStart(6, '0')}`;
+    const historicalMessage = 'Atenção: para anos até 2020, confira também a faixa histórica 800001–999999. O Empenho Web passou a estruturar esses dados a partir de 2021.';
+    const sipacHistorical = isFourDigitYear(fields.sipacCommitmentYear.value) && Number(fields.sipacCommitmentYear.value) < EMPENHO_WEB_START_YEAR;
+    const transparencyHistorical = isFourDigitYear(fields.transparencyYear.value) && Number(fields.transparencyYear.value) < EMPENHO_WEB_START_YEAR;
+    $('sipacCommitmentAdvisory').hidden = !sipacHistorical;
+    $('sipacCommitmentAdvisory').textContent = sipacHistorical ? historicalMessage : '';
+    $('transparencyYearAdvisory').hidden = !transparencyHistorical;
+    $('transparencyYearAdvisory').textContent = transparencyHistorical ? historicalMessage : '';
     if (!$('noticeStatus').classList.contains('loading')) {
       $('noticeStatus').textContent = 'O edital será localizado automaticamente no PNCP.';
+      $('noticeStatus').dataset.state = 'idle';
     }
     saveForm();
   }
@@ -265,7 +302,7 @@
       const label = document.createElement('span');
       label.textContent = entry.label;
       const arrow = document.createElement('b');
-      arrow.textContent = '↗';
+      arrow.textContent = '🔎';
       button.append(label, arrow);
       button.addEventListener('click', () => openUrl(entry.url, entry.label));
       list.append(button);
@@ -330,12 +367,6 @@
       numeroControlePNCP: purchase.numeroControlePNCP || ''
     };
     pncpPurchaseCache.set(cacheKey, compact);
-    const entries = [...pncpPurchaseCache.entries()].slice(-80);
-    try {
-      localStorage.setItem(PNCP_CACHE_KEY, JSON.stringify(Object.fromEntries(entries)));
-    } catch {
-      // O cache em memória ainda evita nova pesquisa durante esta sessão.
-    }
     return compact;
   }
 
@@ -393,55 +424,120 @@
     }
 
     const purchaseYear = Number(info.year);
-    for (const publicationYear of [purchaseYear, purchaseYear + 1]) {
-      let page = 1;
-      let totalPages = 1;
-      do {
-        const params = new URLSearchParams({
-          dataInicial: `${publicationYear}0101`,
-          dataFinal: `${publicationYear}1231`,
-          codigoModalidadeContratacao: '6',
-          cnpj,
-          codigoUnidadeAdministrativa: info.uasg,
-          pagina: String(page),
-          tamanhoPagina: '50'
-        });
-        const result = await fetchPncpJson(
-          `https://pncp.gov.br/api/consulta/v1/contratacoes/publicacao?${params}`,
-          'O PNCP não respondeu à pesquisa agora. Tente novamente em instantes.'
-        );
-        const purchase = (result.data || []).find(record =>
-          String(record.numeroCompra || '').padStart(5, '0') === info.tender &&
-          Number(record.anoCompra) === purchaseYear &&
-          String(record.unidadeOrgao?.codigoUnidade || '') === info.uasg
-        );
-        if (purchase) {
-          return rememberPncpPurchase(cacheKey, purchase);
-        }
-        totalPages = Math.min(Number(result.totalPaginas) || 1, 25);
-        page += 1;
-      } while (page <= totalPages);
+    try {
+      for (const publicationYear of [purchaseYear, purchaseYear + 1]) {
+        let page = 1;
+        let totalPages = 1;
+        do {
+          const params = new URLSearchParams({
+            dataInicial: `${publicationYear}0101`,
+            dataFinal: `${publicationYear}1231`,
+            codigoModalidadeContratacao: '6',
+            cnpj,
+            codigoUnidadeAdministrativa: info.uasg,
+            pagina: String(page),
+            tamanhoPagina: '50'
+          });
+          const result = await fetchPncpJson(
+            `https://pncp.gov.br/api/consulta/v1/contratacoes/publicacao?${params}`,
+            'Falha no acesso aos serviços oficiais.'
+          );
+          const purchase = (result.data || []).find(record =>
+            String(record.numeroCompra || '').padStart(5, '0') === info.tender &&
+            Number(record.anoCompra) === purchaseYear &&
+            String(record.unidadeOrgao?.codigoUnidade || '') === info.uasg
+          );
+          if (purchase) return rememberPncpPurchase(cacheKey, purchase);
+          totalPages = Math.min(Number(result.totalPaginas) || 1, 25);
+          page += 1;
+        } while (page <= totalPages);
+      }
+    } catch {
+      throw noticeError('access', 'Falha no acesso: os serviços oficiais não responderam agora. Tente novamente em instantes.');
     }
     return null;
   }
 
+  async function getPermanentNotice(purchaseKey) {
+    if (!window.location.hostname.endsWith('.chatgpt.site')) return null;
+    try {
+      const response = await fetch(`/edital-cache?compra=${encodeURIComponent(purchaseKey)}`, {
+        cache: 'no-store',
+        headers: { accept: 'application/json' }
+      });
+      if (!response.ok) return null;
+      const stored = await response.json();
+      return typeof stored?.url === 'string' ? stored : null;
+    } catch {
+      return null;
+    }
+  }
+
+  async function savePermanentNotice(info, cnpj, purchase, noticeUrl) {
+    if (!window.location.hostname.endsWith('.chatgpt.site')) return false;
+    try {
+      const response = await fetch('/edital-cache', {
+        method: 'POST',
+        headers: { accept: 'application/json', 'content-type': 'application/json' },
+        body: JSON.stringify({
+          compra: info.key,
+          url: noticeUrl,
+          cnpj,
+          anoCompra: Number(purchase.anoCompra),
+          sequencialCompra: Number(purchase.sequencialCompra)
+        })
+      });
+      return response.ok;
+    } catch {
+      return false;
+    }
+  }
+
+  function startNoticeDownload(info, noticeUrl) {
+    const label = `${info.uasg} · Edital PE ${info.tender}/${info.year}`;
+    remember(label, noticeUrl);
+    const downloadLink = document.createElement('a');
+    downloadLink.href = noticeUrl;
+    downloadLink.download = '';
+    downloadLink.rel = 'noreferrer';
+    downloadLink.hidden = true;
+    document.body.append(downloadLink);
+    downloadLink.click();
+    downloadLink.remove();
+  }
+
   async function downloadCurrentNotice() {
+    const status = $('noticeStatus');
+    if (!requireFourDigitYear(fields.year)) {
+      status.dataset.state = 'validation';
+      status.textContent = 'Ano inválido: informe exatamente 4 dígitos.';
+      return;
+    }
     const info = purchaseInfo();
     const unit = uasgs.find(record => record.c === info.uasg);
-    if (!info.key) return showToast('Preencha UASG, pregão e ano para localizar o edital.');
+    if (!info.key) return showToast('Preencha a UASG e o pregão para localizar o edital.');
     if (!unit?.o) return showToast('Não foi possível identificar o CNPJ desta UASG. Escolha a unidade novamente na lista.');
 
     const button = $('noticeBtn');
-    const status = $('noticeStatus');
     const originalText = button.innerHTML;
     button.disabled = true;
     button.textContent = 'Localizando edital…';
     status.classList.add('loading');
+    status.dataset.state = 'loading';
     status.textContent = 'Consultando a publicação e os documentos no PNCP…';
 
     try {
+      const storedNotice = await getPermanentNotice(info.key);
+      if (storedNotice?.url) {
+        startNoticeDownload(info, storedNotice.url);
+        status.dataset.state = 'success';
+        status.textContent = 'Edital recuperado do histórico compartilhado. O download foi iniciado.';
+        showToast('Edital localizado no histórico compartilhado.');
+        return;
+      }
+
       const purchase = await findPncpPurchase(info, unit.o);
-      if (!purchase) throw new Error('Esta contratação ainda não foi localizada no PNCP. Use "Ver pregão" para consultar no ComprasNet.');
+      if (!purchase) throw noticeError('not-found', 'Ainda não publicado: esta contratação não foi localizada nas bases oficiais. Use “Ver pregão” para conferir no ComprasNet.');
       const documentUrls = [
         `https://pncp.gov.br/api/pncp/v1/orgaos/${unit.o}/compras/${purchase.anoCompra}/${purchase.sequencialCompra}/arquivos`,
         `https://pncp.gov.br/pncp-api/v1/orgaos/${unit.o}/compras/${purchase.anoCompra}/${purchase.sequencialCompra}/arquivos`
@@ -455,27 +551,23 @@
           // Tenta a segunda rota pública oficial do PNCP.
         }
       }
-      if (!Array.isArray(documents)) throw new Error('O PNCP não respondeu à consulta dos documentos. Tente novamente em instantes.');
+      if (!Array.isArray(documents)) throw noticeError('access', 'Falha no acesso: o PNCP não respondeu à consulta dos documentos. Tente novamente em instantes.');
       const notice = (Array.isArray(documents) ? documents : []).find(document =>
         document.statusAtivo !== false && normalizeText(document.tipoDocumentoNome).includes('edital')
       );
       const noticeUrl = notice?.url || notice?.uri;
-      if (!noticeUrl) throw new Error('A compra foi encontrada, mas o edital ainda não está disponível no PNCP.');
+      if (!noticeUrl) throw noticeError('no-notice', 'Sem edital: a compra foi encontrada, mas o documento “Edital” ainda não está disponível no PNCP.');
 
-      const label = `${info.uasg} · Edital PE ${info.tender}/${info.year}`;
-      remember(label, noticeUrl);
-      status.textContent = 'Edital localizado. O download foi iniciado.';
-      const downloadLink = document.createElement('a');
-      downloadLink.href = noticeUrl;
-      downloadLink.download = '';
-      downloadLink.rel = 'noreferrer';
-      downloadLink.hidden = true;
-      document.body.append(downloadLink);
-      downloadLink.click();
-      downloadLink.remove();
-      showToast('Edital localizado no PNCP.');
+      const storedPermanently = await savePermanentNotice(info, unit.o, purchase, noticeUrl);
+      startNoticeDownload(info, noticeUrl);
+      status.dataset.state = 'success';
+      status.textContent = storedPermanently
+        ? 'Edital localizado e salvo no histórico compartilhado. O download foi iniciado.'
+        : 'Edital localizado. O download foi iniciado; o histórico compartilhado está temporariamente indisponível.';
+      showToast(storedPermanently ? 'Edital salvo para as próximas consultas.' : 'Edital localizado no PNCP.');
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Não foi possível localizar o edital.';
+      status.dataset.state = error?.noticeState || 'access';
       status.textContent = message;
       showToast(message);
     } finally {
@@ -509,14 +601,12 @@
     $('currentModeBtn').addEventListener('click', () => setMode('current'));
     $('legacyModeBtn').addEventListener('click', () => setMode('legacy'));
     Object.values(fields).forEach(input => input.addEventListener('input', update));
-    fields.year.addEventListener('input', () => { fields.year.value = onlyDigits(fields.year.value).slice(0, 4); update(); });
+    yearFields.forEach(field => field.addEventListener('input', () => {
+      field.value = onlyDigits(field.value).slice(0, 4);
+      update();
+    }));
     fields.item.addEventListener('input', () => { fields.item.value = onlyDigits(fields.item.value).slice(0, 5); update(); });
-    fields.sipacYear.addEventListener('input', () => { fields.sipacYear.value = onlyDigits(fields.sipacYear.value).slice(0, 4); update(); });
-    fields.sipacCommitmentYear.addEventListener('input', () => { fields.sipacCommitmentYear.value = onlyDigits(fields.sipacCommitmentYear.value).slice(0, 4); update(); });
-    fields.sipacTermYear.addEventListener('input', () => { fields.sipacTermYear.value = onlyDigits(fields.sipacTermYear.value).slice(0, 4); update(); });
-    fields.sipacGuideYear.addEventListener('input', () => { fields.sipacGuideYear.value = onlyDigits(fields.sipacGuideYear.value).slice(0, 4); update(); });
     fields.management.addEventListener('input', () => { fields.management.value = onlyDigits(fields.management.value).slice(0, 5); update(); });
-    fields.transparencyYear.addEventListener('input', () => { fields.transparencyYear.value = onlyDigits(fields.transparencyYear.value).slice(0, 4); update(); });
     fields.commitment.addEventListener('input', () => { fields.commitment.value = onlyDigits(fields.commitment.value).slice(0, 6); update(); });
     fields.uasgInput.addEventListener('focus', renderSuggestions);
     fields.uasgInput.addEventListener('input', renderSuggestions);
@@ -526,16 +616,19 @@
     }, 140));
 
     $('purchaseBtn').addEventListener('click', () => {
+      if (!requireFourDigitYear(fields.year)) return;
       const info = purchaseInfo();
       openUrl(info.purchaseUrl, `${info.uasg} · PE ${info.tender}/${info.year}`);
     });
     $('itemBtn').addEventListener('click', () => {
+      if (!requireFourDigitYear(fields.year)) return;
       const info = purchaseInfo();
       openUrl(info.itemUrl, `${info.uasg} · PE ${info.tender}/${info.year} · item ${info.item}`);
     });
     $('noticeBtn').addEventListener('click', downloadCurrentNotice);
 
     document.querySelectorAll('[data-legacy]').forEach(button => button.addEventListener('click', () => {
+      if (!requireFourDigitYear(fields.year)) return;
       const labels = { ata: 'Ata do pregão', edital: 'Download do edital', andamento: 'Pregões em andamento', agendados: 'Pregões agendados', srp: 'Itens de ata SRP' };
       const kind = button.dataset.legacy;
       openUrl(legacyUrl(kind), `${labels[kind]} · ${purchaseInfo().uasg}`);
@@ -543,26 +636,30 @@
 
     $('sipacRequestBtn').addEventListener('click', () => {
       const number = onlyDigits(fields.sipacRequest.value);
-      const year = onlyDigits(fields.sipacYear.value);
+      const year = requireFourDigitYear(fields.sipacYear);
+      if (!year) return;
       openUrl(number && year ? `https://sipac.ufpb.br/sipac/buscaRequisicao.do?requisicao.numero=${number}&requisicao.ano=${year}` : '', `SIPAC · Requisição ${number}/${year}`);
     });
     $('sipacCommitmentBtn').addEventListener('click', () => {
       const number = onlyDigits(fields.sipacCommitment.value);
-      const year = onlyDigits(fields.sipacCommitmentYear.value);
+      const year = requireFourDigitYear(fields.sipacCommitmentYear);
+      if (!year) return;
       openUrl(number && year ? `https://sipac.ufpb.br/sipac/consultaEmpenho.do?numero=${number}&ano=${year}&idUnidadeGestora=605&acao=13` : '', `SIPAC · Empenho ${number}/${year}`);
     });
     $('sipacTermBtn').addEventListener('click', () => {
       const number = onlyDigits(fields.sipacTerm.value);
-      const year = onlyDigits(fields.sipacTermYear.value);
-      const url = number && /^\d{4}$/.test(year)
+      const year = requireFourDigitYear(fields.sipacTermYear);
+      if (!year) return;
+      const url = number
         ? `https://sipac.ufpb.br/sipac/consultarTermoGuia.do?tipoTombamentoTermo=10&popup=true&tipoConsulta=42&numero=${number}&ano=${year}`
         : '';
       openUrl(url, `SIPAC · Termo de responsabilidade ${number}/${year}`);
     });
     $('sipacGuideBtn').addEventListener('click', () => {
       const number = onlyDigits(fields.sipacGuide.value);
-      const year = onlyDigits(fields.sipacGuideYear.value);
-      const url = number && /^\d{4}$/.test(year)
+      const year = requireFourDigitYear(fields.sipacGuideYear);
+      if (!year) return;
+      const url = number
         ? `https://sipac.ufpb.br/sipac/consultarTermoGuia.do?tipoConsulta=99&numero=${number}&ano=${year}`
         : '';
       openUrl(url, `SIPAC · Guia de movimentação ${number}/${year}`);
@@ -570,9 +667,10 @@
     $('transparencyBtn').addEventListener('click', () => {
       const info = purchaseInfo();
       const management = onlyDigits(fields.management.value).padStart(5, '0');
-      const year = onlyDigits(fields.transparencyYear.value);
+      const year = requireFourDigitYear(fields.transparencyYear);
+      if (!year) return;
       const commitment = onlyDigits(fields.commitment.value).padStart(6, '0');
-      const url = info.uasg && /^\d{4}$/.test(year) && management && commitment
+      const url = info.uasg && management && commitment
         ? `https://portaldatransparencia.gov.br/despesas/documento/empenho/${info.uasg}${management}${year}NE${commitment}`
         : '';
       openUrl(url, `Portal da Transparência · ${year}NE${commitment}`);

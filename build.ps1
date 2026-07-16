@@ -28,14 +28,180 @@ foreach ($asset in $assets) {
 }
 
 @'
+let storageSchemaPromise;
+
+async function ensureStorageSchema(db) {
+  if (!db) return false;
+  if (!storageSchemaPromise) {
+    storageSchemaPromise = db.batch([
+      db.prepare(`CREATE TABLE IF NOT EXISTS api_cache (
+        cache_key TEXT PRIMARY KEY NOT NULL,
+        body TEXT NOT NULL,
+        content_type TEXT NOT NULL DEFAULT 'application/json; charset=utf-8',
+        expires_at INTEGER NOT NULL,
+        updated_at INTEGER NOT NULL
+      )`),
+      db.prepare(`CREATE TABLE IF NOT EXISTS notice_cache (
+        purchase_key TEXT PRIMARY KEY NOT NULL,
+        notice_url TEXT NOT NULL,
+        cnpj TEXT NOT NULL,
+        pncp_year INTEGER NOT NULL,
+        pncp_sequence INTEGER NOT NULL,
+        updated_at INTEGER NOT NULL
+      )`)
+    ]).then(() => true).catch(() => false);
+  }
+  return storageSchemaPromise;
+}
+
+async function readSharedCache(db, key, now) {
+  if (!(await ensureStorageSchema(db))) return null;
+  try {
+    return await db.prepare(
+      'SELECT body, content_type AS contentType FROM api_cache WHERE cache_key = ? AND expires_at > ? LIMIT 1'
+    ).bind(key, now).first();
+  } catch {
+    return null;
+  }
+}
+
+async function writeSharedCache(db, key, body, contentType, expiresAt, now) {
+  if (!(await ensureStorageSchema(db))) return false;
+  try {
+    await db.batch([
+      db.prepare(`INSERT INTO api_cache (cache_key, body, content_type, expires_at, updated_at)
+        VALUES (?, ?, ?, ?, ?)
+        ON CONFLICT(cache_key) DO UPDATE SET
+          body = excluded.body,
+          content_type = excluded.content_type,
+          expires_at = excluded.expires_at,
+          updated_at = excluded.updated_at`
+      ).bind(key, body, contentType, expiresAt, now),
+      db.prepare('DELETE FROM api_cache WHERE expires_at <= ?').bind(now)
+    ]);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+async function readPermanentNotice(db, purchaseKey) {
+  if (!(await ensureStorageSchema(db))) return null;
+  try {
+    return await db.prepare(`SELECT
+      purchase_key AS purchaseKey,
+      notice_url AS noticeUrl,
+      cnpj,
+      pncp_year AS pncpYear,
+      pncp_sequence AS pncpSequence,
+      updated_at AS updatedAt
+      FROM notice_cache WHERE purchase_key = ? LIMIT 1`
+    ).bind(purchaseKey).first();
+  } catch {
+    return null;
+  }
+}
+
+async function writePermanentNotice(db, notice, now) {
+  if (!(await ensureStorageSchema(db))) return false;
+  try {
+    await db.prepare(`INSERT INTO notice_cache
+      (purchase_key, notice_url, cnpj, pncp_year, pncp_sequence, updated_at)
+      VALUES (?, ?, ?, ?, ?, ?)
+      ON CONFLICT(purchase_key) DO UPDATE SET
+        notice_url = excluded.notice_url,
+        cnpj = excluded.cnpj,
+        pncp_year = excluded.pncp_year,
+        pncp_sequence = excluded.pncp_sequence,
+        updated_at = excluded.updated_at`
+    ).bind(
+      notice.purchaseKey,
+      notice.noticeUrl,
+      notice.cnpj,
+      notice.pncpYear,
+      notice.pncpSequence,
+      now
+    ).run();
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function jsonResponse(value, status = 200, extraHeaders = {}) {
+  return new Response(JSON.stringify(value), {
+    status,
+    headers: {
+      'cache-control': 'no-store',
+      'content-type': 'application/json; charset=utf-8',
+      ...extraHeaders
+    }
+  });
+}
+
+function parsePermanentNotice(value) {
+  const purchaseKey = String(value?.compra || '');
+  const noticeUrl = String(value?.url || '');
+  const cnpj = String(value?.cnpj || '');
+  const pncpYear = Number(value?.anoCompra);
+  const pncpSequence = Number(value?.sequencialCompra);
+  if (!/^\d{17}$/.test(purchaseKey) || !/^\d{14}$/.test(cnpj)) return null;
+  if (!Number.isInteger(pncpYear) || pncpYear < 2000 || pncpYear > 2200) return null;
+  if (!Number.isInteger(pncpSequence) || pncpSequence < 1) return null;
+
+  let parsedUrl;
+  try { parsedUrl = new URL(noticeUrl); }
+  catch { return null; }
+  const prefix = `/pncp-api/v1/orgaos/${cnpj}/compras/${pncpYear}/${pncpSequence}/arquivos/`;
+  const alternatePrefix = `/api/pncp/v1/orgaos/${cnpj}/compras/${pncpYear}/${pncpSequence}/arquivos/`;
+  if (
+    parsedUrl.protocol !== 'https:' ||
+    parsedUrl.hostname !== 'pncp.gov.br' ||
+    (!parsedUrl.pathname.startsWith(prefix) && !parsedUrl.pathname.startsWith(alternatePrefix)) ||
+    !/^\d+$/.test(parsedUrl.pathname.split('/').at(-1) || '')
+  ) return null;
+
+  return { purchaseKey, noticeUrl: parsedUrl.toString(), cnpj, pncpYear, pncpSequence };
+}
+
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
+    if (url.pathname === '/edital-cache') {
+      if (request.method === 'GET') {
+        const purchaseKey = String(url.searchParams.get('compra') || '');
+        if (!/^\d{17}$/.test(purchaseKey)) return jsonResponse({ error: 'Chave da compra inválida.' }, 400);
+        const notice = await readPermanentNotice(env.DB, purchaseKey);
+        if (!notice) return jsonResponse({ error: 'Edital ainda não armazenado.' }, 404);
+        return jsonResponse({
+          compra: notice.purchaseKey,
+          url: notice.noticeUrl,
+          cnpj: notice.cnpj,
+          anoCompra: notice.pncpYear,
+          sequencialCompra: notice.pncpSequence,
+          atualizadoEm: notice.updatedAt
+        }, 200, { 'x-cache-scope': 'permanent-database', 'x-cache-status': 'HIT' });
+      }
+
+      if (request.method === 'POST') {
+        let body;
+        try { body = await request.json(); }
+        catch { return jsonResponse({ error: 'Conteúdo inválido.' }, 400); }
+        const notice = parsePermanentNotice(body);
+        if (!notice) return jsonResponse({ error: 'Dados do edital inválidos.' }, 400);
+        const stored = await writePermanentNotice(env.DB, notice, Math.floor(Date.now() / 1000));
+        if (!stored) return jsonResponse({ error: 'Não foi possível armazenar o edital.' }, 503);
+        return jsonResponse({ ok: true, compra: notice.purchaseKey, url: notice.noticeUrl }, 201, {
+          'x-cache-scope': 'permanent-database',
+          'x-cache-status': 'STORED'
+        });
+      }
+
+      return jsonResponse({ error: 'Método não permitido.' }, 405, { allow: 'GET, POST' });
+    }
+
     if (request.method === 'GET' && url.pathname === '/pncp-proxy') {
-      const jsonError = (message, status) => new Response(JSON.stringify({ error: message }), {
-        status,
-        headers: { 'content-type': 'application/json; charset=utf-8' }
-      });
+      const jsonError = (message, status) => jsonResponse({ error: message }, status);
       const rawTarget = url.searchParams.get('target');
       if (!rawTarget) return jsonError('Destino ausente.', 400);
 
@@ -55,25 +221,64 @@ export default {
         return jsonError('Destino não permitido.', 403);
       }
 
+      const cacheSeconds = target.hostname === 'dadosabertos.compras.gov.br' ? 600 : 300;
+      const cacheKey = target.toString();
+      const now = Math.floor(Date.now() / 1000);
+      const cached = await readSharedCache(env.DB, cacheKey, now);
+      if (cached?.body) {
+        return new Response(cached.body, {
+          status: 200,
+          headers: {
+            'cache-control': `public, max-age=${cacheSeconds}`,
+            'content-type': cached.contentType || 'application/json; charset=utf-8',
+            'x-cache-scope': 'shared-database',
+            'x-cache-status': 'HIT'
+          }
+        });
+      }
+
       let upstream;
       try {
-        upstream = await fetch(target.toString(), { headers: { accept: 'application/json' } });
+        upstream = await fetch(target.toString(), {
+          headers: { accept: 'application/json' },
+          cf: {
+            cacheEverything: true,
+            cacheTtlByStatus: { '200-299': cacheSeconds, '300-599': 0 }
+          }
+        });
       } catch {
-        return jsonError('Serviço oficial temporariamente indisponível.', 502);
+        try {
+          upstream = await fetch(target.toString(), { headers: { accept: 'application/json' } });
+        } catch {
+          return jsonError('Serviço oficial temporariamente indisponível.', 502);
+        }
       }
 
       if (!upstream || !upstream.ok) {
         return jsonError('Serviço oficial temporariamente indisponível.', 502);
       }
 
-      const response = new Response(await upstream.arrayBuffer(), {
+      let body;
+      try { body = await upstream.text(); }
+      catch { return jsonError('Serviço oficial temporariamente indisponível.', 502); }
+
+      const contentType = upstream.headers.get('content-type') || 'application/json; charset=utf-8';
+      const stored = await writeSharedCache(env.DB, cacheKey, body, contentType, now + cacheSeconds, now);
+      const cleanHeaders = new Headers(upstream.headers);
+      cleanHeaders.delete('set-cookie');
+      cleanHeaders.delete('set-cookie2');
+      cleanHeaders.delete('vary');
+      cleanHeaders.delete('content-length');
+      cleanHeaders.delete('content-encoding');
+      const response = new Response(body, {
         status: upstream.status,
         statusText: upstream.statusText,
-        headers: upstream.headers
+        headers: cleanHeaders
       });
-      const cacheSeconds = target.pathname.startsWith('/api/pncp/') ? 900 : 86400;
       response.headers.set('cache-control', `public, max-age=${cacheSeconds}`);
       response.headers.set('content-type', 'application/json; charset=utf-8');
+      response.headers.set('x-cache-scope', stored ? 'shared-database' : 'shared-unavailable');
+      response.headers.set('x-cache-status', stored ? 'MISS' : 'BYPASS');
       return response;
     }
 

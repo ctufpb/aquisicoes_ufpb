@@ -1,4 +1,4 @@
-const CACHE_NAME = 'consulta-aquisicoes-v1.0.2-layout-3';
+const CACHE_NAME = 'consulta-aquisicoes-v1.0.3-permanent';
 const ASSETS = [
   './',
   './index.html',
@@ -39,5 +39,25 @@ self.addEventListener('fetch', event => {
     );
     return;
   }
+
+  const requestUrl = new URL(event.request.url);
+  const needsFreshCopy = requestUrl.origin === self.location.origin && (
+    event.request.destination === 'script' ||
+    event.request.destination === 'style' ||
+    requestUrl.pathname.endsWith('/manifest.json') ||
+    requestUrl.pathname.endsWith('/uasgs.json')
+  );
+  if (needsFreshCopy) {
+    event.respondWith(
+      fetch(event.request, { cache: 'no-store' })
+        .then(response => {
+          if (response.ok) caches.open(CACHE_NAME).then(cache => cache.put(event.request, response.clone()));
+          return response;
+        })
+        .catch(() => caches.match(event.request))
+    );
+    return;
+  }
+
   event.respondWith(caches.match(event.request).then(cached => cached || fetch(event.request)));
 });
