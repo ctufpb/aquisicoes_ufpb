@@ -15,7 +15,8 @@
 
       const pncpPath = target.hostname === 'pncp.gov.br' && (
         target.pathname.startsWith('/api/consulta/v1/contratacoes/') ||
-        target.pathname.startsWith('/api/pncp/v1/orgaos/')
+        target.pathname.startsWith('/api/pncp/v1/orgaos/') ||
+        target.pathname.startsWith('/pncp-api/v1/orgaos/')
       );
       const comprasGovPath =
         target.hostname === 'dadosabertos.compras.gov.br' &&

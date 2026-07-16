@@ -42,6 +42,11 @@
     sipacRequest: $('sipacRequestInput'),
     sipacYear: $('sipacYearInput'),
     sipacCommitment: $('sipacCommitmentInput'),
+    sipacCommitmentYear: $('sipacCommitmentYearInput'),
+    sipacTerm: $('sipacTermInput'),
+    sipacTermYear: $('sipacTermYearInput'),
+    sipacGuide: $('sipacGuideInput'),
+    sipacGuideYear: $('sipacGuideYearInput'),
     management: $('managementInput'),
     transparencyYear: $('transparencyYearInput'),
     commitment: $('commitmentInput')
@@ -81,6 +86,11 @@
       sipacRequest: fields.sipacRequest.value,
       sipacYear: fields.sipacYear.value,
       sipacCommitment: fields.sipacCommitment.value,
+      sipacCommitmentYear: fields.sipacCommitmentYear.value,
+      sipacTerm: fields.sipacTerm.value,
+      sipacTermYear: fields.sipacTermYear.value,
+      sipacGuide: fields.sipacGuide.value,
+      sipacGuideYear: fields.sipacGuideYear.value,
       management: fields.management.value,
       transparencyYear: fields.transparencyYear.value,
       commitment: fields.commitment.value
@@ -141,7 +151,6 @@
         : 'Carregando base de UASGs…';
     $('tenderHelp').textContent = mode === 'current' && info.tender ? `Será usado ${info.tender}` : 'Número sem o ano';
     $('itemBtn').childNodes[0].nodeValue = `Ver item ${info.item} `;
-    $('sipacCommitmentYear').value = fields.sipacYear.value;
     const transparencyYear = onlyDigits(fields.transparencyYear.value);
     $('transparencyPreview').textContent = `UASG ${info.uasg || '—'} · ${transparencyYear || '—'}NE${onlyDigits(fields.commitment.value).padStart(6, '0')}`;
     if (!$('noticeStatus').classList.contains('loading')) {
@@ -227,9 +236,7 @@
       const details = document.createElement('span');
       const name = document.createElement('strong');
       name.textContent = record.n;
-      const meta = document.createElement('small');
-      meta.textContent = `${record.uf} · ${record.a ? 'Ativa' : 'Inativa'}`;
-      details.append(name, meta);
+      details.append(name);
       selectButton.append(code, details);
 
       const favoriteButton = document.createElement('button');
@@ -301,10 +308,7 @@
   async function fetchPncpJson(url, errorMessage) {
     const hosted = window.location.hostname.endsWith('.chatgpt.site');
     const routes = hosted
-      ? [
-          { url: `/pncp-proxy?target=${encodeURIComponent(url)}`, attempts: 2 },
-          { url, attempts: 2 }
-        ]
+      ? [{ url: `/pncp-proxy?target=${encodeURIComponent(url)}`, attempts: 2 }]
       : [{ url, attempts: 3 }];
 
     for (const route of routes) {
@@ -383,6 +387,7 @@
     try {
       const comprasGovPurchase = await findPurchaseOnComprasGov(info, cnpj);
       if (comprasGovPurchase) return rememberPncpPurchase(cacheKey, comprasGovPurchase);
+      return null;
     } catch {
       // Se o Compras.gov.br estiver instável, a pesquisa segue pela API do PNCP.
     }
@@ -437,20 +442,31 @@
     try {
       const purchase = await findPncpPurchase(info, unit.o);
       if (!purchase) throw new Error('Esta contratação ainda não foi localizada no PNCP. Use "Ver pregão" para consultar no ComprasNet.');
-      const documents = await fetchPncpJson(
+      const documentUrls = [
         `https://pncp.gov.br/api/pncp/v1/orgaos/${unit.o}/compras/${purchase.anoCompra}/${purchase.sequencialCompra}/arquivos`,
-        'O PNCP não respondeu à consulta dos documentos. Tente novamente em instantes.'
-      );
+        `https://pncp.gov.br/pncp-api/v1/orgaos/${unit.o}/compras/${purchase.anoCompra}/${purchase.sequencialCompra}/arquivos`
+      ];
+      let documents;
+      for (const url of documentUrls) {
+        try {
+          documents = await fetchPncpJson(url, '');
+          break;
+        } catch {
+          // Tenta a segunda rota pública oficial do PNCP.
+        }
+      }
+      if (!Array.isArray(documents)) throw new Error('O PNCP não respondeu à consulta dos documentos. Tente novamente em instantes.');
       const notice = (Array.isArray(documents) ? documents : []).find(document =>
         document.statusAtivo !== false && normalizeText(document.tipoDocumentoNome).includes('edital')
       );
-      if (!notice?.url) throw new Error('A compra foi encontrada, mas o edital ainda não está disponível no PNCP.');
+      const noticeUrl = notice?.url || notice?.uri;
+      if (!noticeUrl) throw new Error('A compra foi encontrada, mas o edital ainda não está disponível no PNCP.');
 
       const label = `${info.uasg} · Edital PE ${info.tender}/${info.year}`;
-      remember(label, notice.url);
+      remember(label, noticeUrl);
       status.textContent = 'Edital localizado. O download foi iniciado.';
       const downloadLink = document.createElement('a');
-      downloadLink.href = notice.url;
+      downloadLink.href = noticeUrl;
       downloadLink.download = '';
       downloadLink.rel = 'noreferrer';
       downloadLink.hidden = true;
@@ -478,6 +494,11 @@
     fields.sipacRequest.value = stored.sipacRequest || '6042';
     fields.sipacYear.value = stored.sipacYear || String(THIS_YEAR);
     fields.sipacCommitment.value = stored.sipacCommitment || '801009';
+    fields.sipacCommitmentYear.value = stored.sipacCommitmentYear || String(THIS_YEAR);
+    fields.sipacTerm.value = stored.sipacTerm || '3069';
+    fields.sipacTermYear.value = stored.sipacTermYear || '2025';
+    fields.sipacGuide.value = stored.sipacGuide || '2450';
+    fields.sipacGuideYear.value = stored.sipacGuideYear || '2025';
     fields.management.value = stored.management || '15231';
     fields.transparencyYear.value = stored.transparencyYear || String(THIS_YEAR);
     fields.commitment.value = stored.commitment || '801009';
@@ -491,6 +512,9 @@
     fields.year.addEventListener('input', () => { fields.year.value = onlyDigits(fields.year.value).slice(0, 4); update(); });
     fields.item.addEventListener('input', () => { fields.item.value = onlyDigits(fields.item.value).slice(0, 5); update(); });
     fields.sipacYear.addEventListener('input', () => { fields.sipacYear.value = onlyDigits(fields.sipacYear.value).slice(0, 4); update(); });
+    fields.sipacCommitmentYear.addEventListener('input', () => { fields.sipacCommitmentYear.value = onlyDigits(fields.sipacCommitmentYear.value).slice(0, 4); update(); });
+    fields.sipacTermYear.addEventListener('input', () => { fields.sipacTermYear.value = onlyDigits(fields.sipacTermYear.value).slice(0, 4); update(); });
+    fields.sipacGuideYear.addEventListener('input', () => { fields.sipacGuideYear.value = onlyDigits(fields.sipacGuideYear.value).slice(0, 4); update(); });
     fields.management.addEventListener('input', () => { fields.management.value = onlyDigits(fields.management.value).slice(0, 5); update(); });
     fields.transparencyYear.addEventListener('input', () => { fields.transparencyYear.value = onlyDigits(fields.transparencyYear.value).slice(0, 4); update(); });
     fields.commitment.addEventListener('input', () => { fields.commitment.value = onlyDigits(fields.commitment.value).slice(0, 6); update(); });
@@ -524,8 +548,24 @@
     });
     $('sipacCommitmentBtn').addEventListener('click', () => {
       const number = onlyDigits(fields.sipacCommitment.value);
-      const year = onlyDigits(fields.sipacYear.value);
+      const year = onlyDigits(fields.sipacCommitmentYear.value);
       openUrl(number && year ? `https://sipac.ufpb.br/sipac/consultaEmpenho.do?numero=${number}&ano=${year}&idUnidadeGestora=605&acao=13` : '', `SIPAC · Empenho ${number}/${year}`);
+    });
+    $('sipacTermBtn').addEventListener('click', () => {
+      const number = onlyDigits(fields.sipacTerm.value);
+      const year = onlyDigits(fields.sipacTermYear.value);
+      const url = number && /^\d{4}$/.test(year)
+        ? `https://sipac.ufpb.br/sipac/consultarTermoGuia.do?tipoTombamentoTermo=10&popup=true&tipoConsulta=42&numero=${number}&ano=${year}`
+        : '';
+      openUrl(url, `SIPAC · Termo de responsabilidade ${number}/${year}`);
+    });
+    $('sipacGuideBtn').addEventListener('click', () => {
+      const number = onlyDigits(fields.sipacGuide.value);
+      const year = onlyDigits(fields.sipacGuideYear.value);
+      const url = number && /^\d{4}$/.test(year)
+        ? `https://sipac.ufpb.br/sipac/consultarTermoGuia.do?tipoConsulta=99&numero=${number}&ano=${year}`
+        : '';
+      openUrl(url, `SIPAC · Guia de movimentação ${number}/${year}`);
     });
     $('transparencyBtn').addEventListener('click', () => {
       const info = purchaseInfo();

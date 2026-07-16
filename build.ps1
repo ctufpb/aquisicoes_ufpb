@@ -18,7 +18,7 @@ New-Item -ItemType Directory -Path $client, $server -Force | Out-Null
 $assets = @(
   'index.html', 'style.css', 'app.js', 'manifest.json', 'service-worker.js',
   'icon-192.png', 'icon-512.png', 'comprasgov.png', 'sipac-ufpb.webp',
-  'portal-transparencia.webp', 'pra-ufpb.webp', 'uasgs.json'
+  'portal-transparencia.webp', 'pra-ufpb.png', 'uasgs.json'
 )
 
 foreach ($asset in $assets) {
@@ -45,7 +45,8 @@ export default {
 
       const pncpPath = target.hostname === 'pncp.gov.br' && (
         target.pathname.startsWith('/api/consulta/v1/contratacoes/') ||
-        target.pathname.startsWith('/api/pncp/v1/orgaos/')
+        target.pathname.startsWith('/api/pncp/v1/orgaos/') ||
+        target.pathname.startsWith('/pncp-api/v1/orgaos/')
       );
       const comprasGovPath =
         target.hostname === 'dadosabertos.compras.gov.br' &&

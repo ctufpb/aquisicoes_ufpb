@@ -33,7 +33,7 @@
         <article class="panel search-panel">
           <div class="panel-heading">
             <div class="panel-title-lockup">
-              <span class="panel-icon" aria-hidden="true">⌕</span>
+              <span class="panel-icon" aria-hidden="true">🔎</span>
               <div>
                 <span class="section-kicker">Pesquisa</span>
                 <h3>Dados da contratação</h3>
@@ -53,7 +53,7 @@
               <span>UASG</span>
               <div class="combobox">
                 <input id="uasgInput" value="153065" placeholder="Código ou nome da unidade" autocomplete="off" role="combobox" aria-controls="uasgSuggestions" aria-expanded="false" />
-                <span class="search-glyph" aria-hidden="true">⌕</span>
+                <span class="search-glyph" aria-hidden="true">🔎</span>
                 <div class="suggestions" id="uasgSuggestions" role="listbox" hidden></div>
               </div>
               <small class="field-help" id="uasgHelp">Carregando base de UASGs…</small>
@@ -124,8 +124,18 @@
               </div>
               <div class="inline-fields">
                 <label class="field"><span>Empenho</span><input id="sipacCommitmentInput" inputmode="numeric" value="801009" /></label>
-                <label class="field year-field"><span>Ano</span><input id="sipacCommitmentYear" inputmode="numeric" value="2026" readonly /></label>
+                <label class="field year-field"><span>Ano</span><input id="sipacCommitmentYearInput" inputmode="numeric" value="2026" maxlength="4" /></label>
                 <button id="sipacCommitmentBtn" type="button">Abrir <span>↗</span></button>
+              </div>
+              <div class="inline-fields">
+                <label class="field"><span>Termo de responsabilidade</span><input id="sipacTermInput" inputmode="numeric" value="3069" /></label>
+                <label class="field year-field"><span>Ano</span><input id="sipacTermYearInput" inputmode="numeric" value="2025" maxlength="4" /></label>
+                <button id="sipacTermBtn" type="button">Abrir <span>↗</span></button>
+              </div>
+              <div class="inline-fields">
+                <label class="field"><span>Guia de movimentação</span><input id="sipacGuideInput" inputmode="numeric" value="2450" /></label>
+                <label class="field year-field"><span>Ano</span><input id="sipacGuideYearInput" inputmode="numeric" value="2025" maxlength="4" /></label>
+                <button id="sipacGuideBtn" type="button">Abrir <span>↗</span></button>
               </div>
             </div>
           </article>
@@ -147,18 +157,17 @@
 
           <article class="quick-links-card" aria-label="Atalhos externos">
             <a class="planning-link" href="https://docs.google.com/spreadsheets/d/1jGLa06mQH72GxSqIlkwxTO5CDAF3Pw3YwF_duSc5cCM/edit?gid=0#gid=0" target="_blank" rel="noreferrer">
-              <img class="quick-logo pra-logo" src="pra-ufpb.webp" alt="PRA UFPB" />
+              <img class="quick-logo pra-logo" src="pra-ufpb.png" alt="PRA UFPB" />
               <div>
-                <span class="quick-tag">Planejamento 2026 - PRA</span>
-                <h3>Pregões, IRPs e contratos vigentes</h3>
-                <p>Acesse a planilha de acompanhamento.</p>
+                <h3 class="planning-title">Planejamento 2026 <span>— PRA</span></h3>
+                <p class="planning-subtitle">Pregões, IRPs e contratos vigentes</p>
+                <p class="planning-cta">Acesse a planilha de acompanhamento.</p>
               </div>
               <b aria-hidden="true">↗</b>
             </a>
             <a class="catalog-link" href="https://catalogo.compras.gov.br/cnbs-web/busca" target="_blank" rel="noreferrer">
               <img class="quick-logo compras-logo" src="comprasgov.png" alt="Compras.gov.br" />
               <div>
-                <span class="quick-tag">Compras.gov.br</span>
                 <h3>Catálogo CATMAT/CATSER</h3>
                 <p>Busque materiais e serviços no catálogo oficial.</p>
               </div>
