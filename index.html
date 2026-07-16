@@ -11,7 +11,7 @@
   <link rel="manifest" href="manifest.json" />
   <link rel="icon" href="icon-192.png" type="image/png" />
   <link rel="apple-touch-icon" href="icon-192.png" />
-  <link rel="stylesheet" href="style.css?v=1.0.3-analytics" />
+  <link rel="stylesheet" href="style.css?v=1.0.3-saved-counts" />
 </head>
 <body>
   <div class="app-shell">
@@ -195,6 +195,10 @@
             <span><strong id="usageMonth">—</strong><small>30 dias</small></span>
           </div>
           <small class="usage-status" id="usageStatus">Contagem anônima e aproximada.</small>
+          <div class="saved-counts" aria-label="Documentos armazenados">
+            <span><strong id="savedEditais">—</strong> editais salvos</span>
+            <span><strong id="savedAtas">—</strong> atas salvas</span>
+          </div>
         </div>
       </details>
     </footer>
@@ -214,6 +218,6 @@
     </section>
   </div>
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
-  <script src="app.js?v=1.0.3-analytics" defer></script>
+  <script src="app.js?v=1.0.3-saved-counts" defer></script>
 </body>
 </html>

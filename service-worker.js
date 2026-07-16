@@ -1,4 +1,4 @@
-const CACHE_NAME = 'consulta-aquisicoes-v1.0.3-analytics';
+const CACHE_NAME = 'consulta-aquisicoes-v1.0.3-saved-counts';
 const ASSETS = [
   './',
   './index.html',

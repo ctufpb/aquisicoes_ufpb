@@ -217,13 +217,17 @@ async function readAnalyticsSummary(db) {
     const result = await db.prepare(`SELECT
       COUNT(DISTINCT CASE WHEN visit_date = ? THEN device_id END) AS today,
       COUNT(DISTINCT CASE WHEN visit_date >= ? THEN device_id END) AS week,
-      COUNT(DISTINCT CASE WHEN visit_date >= ? THEN device_id END) AS month
+      COUNT(DISTINCT CASE WHEN visit_date >= ? THEN device_id END) AS month,
+      (SELECT COUNT(*) FROM notice_cache) AS saved_editais,
+      (SELECT COUNT(*) FROM pncp_link_cache WHERE ata_sequence IS NOT NULL) AS saved_atas
       FROM device_visits`
     ).bind(analyticsDateKey(0), analyticsDateKey(6), analyticsDateKey(29)).first();
     return {
       today: Number(result?.today) || 0,
       week: Number(result?.week) || 0,
-      month: Number(result?.month) || 0
+      month: Number(result?.month) || 0,
+      savedEditais: Number(result?.saved_editais) || 0,
+      savedAtas: Number(result?.saved_atas) || 0
     };
   } catch {
     return null;

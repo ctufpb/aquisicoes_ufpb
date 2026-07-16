@@ -283,6 +283,8 @@ h1, h2, h3, p { margin: 0; }
 .usage-metrics > span { display: grid; gap: 1px; padding: 6px 5px; border-radius: 8px; background: #f2f7f5; }
 .usage-metrics strong { color: var(--brand-strong); font-size: 1rem; line-height: 1.1; }
 .usage-metrics small, .usage-status { color: #697873; font-size: 0.63rem; font-weight: 700; }
+.saved-counts { display: flex; flex-wrap: wrap; gap: 7px 16px; padding-top: 7px; border-top: 1px solid rgba(207, 222, 217, 0.72); color: #586963; font-size: 0.7rem; font-weight: 750; }
+.saved-counts strong { color: var(--brand-strong); font-size: 0.82rem; }
 
 .modal-backdrop { position: fixed; inset: 0; z-index: 70; display: grid; place-items: center; padding: 18px; background: rgba(17, 30, 26, 0.55); backdrop-filter: blur(9px); }
 .install-dialog { position: relative; width: min(450px, 100%); padding: 28px; border: 1px solid rgba(255, 255, 255, 0.62); border-radius: 20px; background: #fff; box-shadow: 0 34px 100px rgba(8, 24, 19, 0.32); }

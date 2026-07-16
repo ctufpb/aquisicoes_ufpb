@@ -104,6 +104,8 @@
       $('usageToday').textContent = format.format(Number(summary.today) || 0);
       $('usageWeek').textContent = format.format(Number(summary.week) || 0);
       $('usageMonth').textContent = format.format(Number(summary.month) || 0);
+      $('savedEditais').textContent = format.format(Number(summary.savedEditais) || 0);
+      $('savedAtas').textContent = format.format(Number(summary.savedAtas) || 0);
       $('usageStatus').textContent = 'Dispositivos únicos aproximados; nenhum dado pessoal é armazenado.';
     } catch {
       $('usageStatus').textContent = 'Contagem temporariamente indisponível.';
