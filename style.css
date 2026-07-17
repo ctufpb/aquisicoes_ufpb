@@ -77,9 +77,9 @@ h1, h2, h3, p { margin: 0; }
     linear-gradient(116deg, transparent 0 62%, rgba(45, 72, 91, 0.055) 62% 63%, transparent 63% 68%, rgba(183, 138, 67, 0.075) 68% 69%, transparent 69%);
 }
 .topbar > * { position: relative; z-index: 1; }
-.brand-lockup { display: flex; align-items: center; gap: 11px; min-width: 0; }
-.brand-lockup::before { content: ""; flex: 0 0 auto; width: 3px; height: 36px; border-radius: 999px; background: linear-gradient(180deg, #b68a43, #315168); }
-.brand-lockup h1 { font-family: "Iowan Old Style", "Palatino Linotype", "Book Antiqua", Georgia, serif; font-size: clamp(1.16rem, 2.1vw, 1.52rem); font-weight: 700; line-height: 1.15; letter-spacing: -0.025em; }
+.brand-lockup { display: flex; flex: 1 1 auto; align-items: center; gap: 11px; min-width: 0; }
+.app-brand-icon { flex: 0 0 auto; width: 48px; height: 48px; aspect-ratio: 1; border: 1px solid rgba(48, 89, 122, 0.13); border-radius: 14px; object-fit: cover; box-shadow: 0 7px 18px rgba(38, 76, 105, 0.12); }
+.brand-lockup h1 { min-width: 0; font-family: "Iowan Old Style", "Palatino Linotype", "Book Antiqua", Georgia, serif; font-size: clamp(1.16rem, 2.1vw, 1.52rem); font-weight: 700; line-height: 1.15; letter-spacing: -0.025em; }
 .app-version { flex: 0 0 auto; padding: 4px 7px; border: 1px solid rgba(176, 145, 87, 0.35); border-radius: 999px; color: #6b5938; background: rgba(255, 253, 248, 0.82); font-size: 0.63rem; font-weight: 850; letter-spacing: 0.045em; }
 .install-button, .primary-button, .secondary-button {
   display: inline-flex;
@@ -305,8 +305,9 @@ h1, h2, h3, p { margin: 0; }
 
 @media (max-width: 760px) {
   .app-shell { padding: 12px 14px 34px; }
-  .topbar { min-height: 68px; margin: -12px -14px 14px; padding: 11px 14px; }
-  .brand-lockup h1 { max-width: 250px; font-size: 0.94rem; }
+  .topbar { min-height: 68px; gap: 10px; margin: -12px -14px 14px; padding: 11px 14px; }
+  .app-brand-icon { width: 40px; height: 40px; border-radius: 12px; }
+  .brand-lockup h1 { max-width: 220px; font-size: 0.94rem; }
   .app-version { font-size: 0.57rem; }
   .install-button { min-height: 42px; padding: 0 11px; font-size: 0.73rem; }
   .search-panel, .recent-panel { padding: 18px; }
@@ -326,11 +327,13 @@ h1, h2, h3, p { margin: 0; }
 }
 
 @media (max-width: 480px) {
-  .brand-lockup h1 { max-width: 190px; font-size: 0.83rem; }
-  .brand-lockup { gap: 7px; }
-  .brand-lockup::before { height: 30px; }
+  .topbar { gap: 8px; }
+  .brand-lockup { gap: 6px; }
+  .app-brand-icon { width: 34px; height: 34px; border-radius: 10px; }
+  .brand-lockup h1 { max-width: none; font-size: 0.8rem; }
+  .app-version { padding: 3px 5px; font-size: 0.52rem; }
   .install-button span:first-child { display: none; }
-  .install-button { min-height: 42px; padding: 0 12px; border-radius: 11px; font-size: 0.72rem; }
+  .install-button { min-height: 42px; padding: 0 9px; border-radius: 11px; font-size: 0.69rem; }
   .panel-title-lockup { align-items: flex-start; }
   .form-grid { grid-template-columns: minmax(0, 1fr) 68px 86px; gap: 8px; }
   .uasg-field { grid-column: 1 / -1; }
