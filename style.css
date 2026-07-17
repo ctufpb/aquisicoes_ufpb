@@ -281,7 +281,7 @@ h1, h2, h3, p { margin: 0; }
 .usage-title { color: #52635d; font-size: 0.72rem; font-weight: 850; }
 .usage-metrics { display: grid; grid-template-columns: repeat(3, 1fr); gap: 7px; }
 .usage-metrics > span { display: grid; gap: 1px; padding: 6px 5px; border-radius: 8px; background: #f2f7f5; }
-.usage-metrics strong { color: var(--brand-strong); font-size: 1rem; line-height: 1.1; }
+.usage-metrics strong { color: var(--brand-strong); font-size: clamp(0.78rem, 3vw, 1rem); line-height: 1.1; white-space: nowrap; }
 .usage-metrics small, .usage-status { color: #697873; font-size: 0.63rem; font-weight: 700; }
 .saved-counts { display: flex; flex-wrap: wrap; gap: 7px 16px; padding-top: 7px; border-top: 1px solid rgba(207, 222, 217, 0.72); color: #586963; font-size: 0.7rem; font-weight: 750; }
 .saved-counts strong { color: var(--brand-strong); font-size: 0.82rem; }

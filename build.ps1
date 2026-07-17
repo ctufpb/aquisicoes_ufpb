@@ -61,7 +61,8 @@ async function ensureStorageSchema(db) {
         visit_key TEXT PRIMARY KEY NOT NULL,
         device_id TEXT NOT NULL,
         visit_date TEXT NOT NULL,
-        last_seen INTEGER NOT NULL
+        last_seen INTEGER NOT NULL,
+        open_count INTEGER NOT NULL DEFAULT 1
       )`),
       db.prepare('CREATE INDEX IF NOT EXISTS device_visits_date_idx ON device_visits (visit_date)')
     ]).then(() => true).catch(() => false);
@@ -215,17 +216,33 @@ async function readAnalyticsSummary(db) {
   if (!(await ensureStorageSchema(db))) return null;
   try {
     const result = await db.prepare(`SELECT
-      COUNT(DISTINCT CASE WHEN visit_date = ? THEN device_id END) AS today,
-      COUNT(DISTINCT CASE WHEN visit_date >= ? THEN device_id END) AS week,
-      COUNT(DISTINCT CASE WHEN visit_date >= ? THEN device_id END) AS month,
+      COUNT(DISTINCT CASE WHEN visit_date = ? THEN device_id END) AS today_unique,
+      SUM(CASE WHEN visit_date = ? THEN open_count ELSE 0 END) AS today_total,
+      COUNT(DISTINCT CASE WHEN visit_date >= ? THEN device_id END) AS week_unique,
+      SUM(CASE WHEN visit_date >= ? THEN open_count ELSE 0 END) AS week_total,
+      COUNT(DISTINCT CASE WHEN visit_date >= ? THEN device_id END) AS month_unique,
+      SUM(CASE WHEN visit_date >= ? THEN open_count ELSE 0 END) AS month_total,
       (SELECT COUNT(*) FROM notice_cache) AS saved_editais,
       (SELECT COUNT(*) FROM pncp_link_cache WHERE ata_sequence IS NOT NULL) AS saved_atas
       FROM device_visits`
-    ).bind(analyticsDateKey(0), analyticsDateKey(6), analyticsDateKey(29)).first();
+    ).bind(
+      analyticsDateKey(0), analyticsDateKey(0),
+      analyticsDateKey(6), analyticsDateKey(6),
+      analyticsDateKey(29), analyticsDateKey(29)
+    ).first();
+    const todayUnique = Number(result?.today_unique) || 0;
+    const weekUnique = Number(result?.week_unique) || 0;
+    const monthUnique = Number(result?.month_unique) || 0;
     return {
-      today: Number(result?.today) || 0,
-      week: Number(result?.week) || 0,
-      month: Number(result?.month) || 0,
+      today: todayUnique,
+      week: weekUnique,
+      month: monthUnique,
+      todayUnique,
+      weekUnique,
+      monthUnique,
+      todayTotal: Number(result?.today_total) || 0,
+      weekTotal: Number(result?.week_total) || 0,
+      monthTotal: Number(result?.month_total) || 0,
       savedEditais: Number(result?.saved_editais) || 0,
       savedAtas: Number(result?.saved_atas) || 0
     };
@@ -239,9 +256,11 @@ async function recordAnonymousDeviceVisit(db, deviceId) {
   const visitDate = analyticsDateKey(0);
   const now = Math.floor(Date.now() / 1000);
   try {
-    await db.prepare(`INSERT INTO device_visits (visit_key, device_id, visit_date, last_seen)
-      VALUES (?, ?, ?, ?)
-      ON CONFLICT(visit_key) DO UPDATE SET last_seen = excluded.last_seen`
+    await db.prepare(`INSERT INTO device_visits (visit_key, device_id, visit_date, last_seen, open_count)
+      VALUES (?, ?, ?, ?, 1)
+      ON CONFLICT(visit_key) DO UPDATE SET
+        last_seen = excluded.last_seen,
+        open_count = device_visits.open_count + 1`
     ).bind(`${visitDate}:${deviceId}`, deviceId, visitDate, now).run();
     return readAnalyticsSummary(db);
   } catch {

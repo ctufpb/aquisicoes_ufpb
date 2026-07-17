@@ -92,6 +92,7 @@
 
   async function recordAnonymousVisit() {
     const format = new Intl.NumberFormat('pt-BR');
+    const accessMetric = (total, unique) => `${format.format(Number(total) || 0)} (${format.format(Number(unique) || 0)})`;
     try {
       const response = await fetch(sharedApiUrl('/analytics/visit'), {
         method: 'POST',
@@ -101,12 +102,12 @@
       });
       if (!response.ok) throw new Error('Contagem indisponível');
       const summary = await response.json();
-      $('usageToday').textContent = format.format(Number(summary.today) || 0);
-      $('usageWeek').textContent = format.format(Number(summary.week) || 0);
-      $('usageMonth').textContent = format.format(Number(summary.month) || 0);
+      $('usageToday').textContent = accessMetric(summary.todayTotal ?? summary.today, summary.todayUnique ?? summary.today);
+      $('usageWeek').textContent = accessMetric(summary.weekTotal ?? summary.week, summary.weekUnique ?? summary.week);
+      $('usageMonth').textContent = accessMetric(summary.monthTotal ?? summary.month, summary.monthUnique ?? summary.month);
       $('savedEditais').textContent = format.format(Number(summary.savedEditais) || 0);
       $('savedAtas').textContent = format.format(Number(summary.savedAtas) || 0);
-      $('usageStatus').textContent = 'Dispositivos únicos aproximados; nenhum dado pessoal é armazenado.';
+      $('usageStatus').textContent = 'Total de acessos (aparelhos únicos aproximados); nenhum dado pessoal é armazenado.';
     } catch {
       $('usageStatus').textContent = 'Contagem temporariamente indisponível.';
     }

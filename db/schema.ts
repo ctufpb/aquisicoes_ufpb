@@ -31,4 +31,5 @@ export const deviceVisits = sqliteTable("device_visits", {
   deviceId: text("device_id").notNull(),
   visitDate: text("visit_date").notNull(),
   lastSeen: integer("last_seen").notNull(),
+  openCount: integer("open_count").notNull().default(1),
 });

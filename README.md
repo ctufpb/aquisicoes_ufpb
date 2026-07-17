@@ -19,4 +19,4 @@ As respostas públicas usadas durante a pesquisa têm um cache temporário compa
 
 Não há login próprio, Google Sheets, sincronização de dados pessoais ou `node_modules`.
 
-O rodapé exibe uma contagem agregada e aproximada de dispositivos que abriram o app. O banco guarda somente um identificador aleatório criado pelo navegador e a data de acesso; não registra nome, e-mail ou IP.
+O rodapé exibe a quantidade total de acessos e, entre parênteses, a contagem aproximada de dispositivos únicos. O banco guarda somente um identificador aleatório criado pelo navegador, a data e o total diário de aberturas; não registra nome, e-mail ou IP.
