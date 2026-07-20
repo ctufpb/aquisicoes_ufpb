@@ -64,6 +64,11 @@ async function ensureStorageSchema(db) {
         last_seen INTEGER NOT NULL,
         open_count INTEGER NOT NULL DEFAULT 1
       )`),
+      db.prepare(`CREATE TABLE IF NOT EXISTS sipac_process_cache (
+        process_number TEXT PRIMARY KEY NOT NULL,
+        process_id INTEGER NOT NULL,
+        updated_at INTEGER NOT NULL
+      )`),
       db.prepare('CREATE INDEX IF NOT EXISTS device_visits_date_idx ON device_visits (visit_date)')
     ]).then(() => true).catch(() => false);
   }
@@ -268,6 +273,130 @@ async function recordAnonymousDeviceVisit(db, deviceId) {
   }
 }
 
+function parseSipacProcessNumber(value) {
+  const digits = String(value || '').replace(/\D/g, '');
+  if (!/^23074\d{12}$/.test(digits)) return null;
+  const year = Number(digits.slice(11, 15));
+  if (year < 2000 || year > 2200) return null;
+  return {
+    processNumber: `${digits.slice(0, 5)}.${digits.slice(5, 11)}/${digits.slice(11, 15)}-${digits.slice(15, 17)}`,
+    radical: digits.slice(0, 5),
+    sequence: digits.slice(5, 11),
+    year: digits.slice(11, 15),
+    verifier: digits.slice(15, 17)
+  };
+}
+
+async function readCachedSipacProcess(db, processNumber) {
+  if (!(await ensureStorageSchema(db))) return null;
+  try {
+    return await db.prepare(`SELECT process_id AS processId, updated_at AS updatedAt
+      FROM sipac_process_cache WHERE process_number = ? LIMIT 1`
+    ).bind(processNumber).first();
+  } catch {
+    return null;
+  }
+}
+
+async function writeCachedSipacProcess(db, processNumber, processId, now) {
+  if (!(await ensureStorageSchema(db))) return false;
+  try {
+    await db.prepare(`INSERT INTO sipac_process_cache (process_number, process_id, updated_at)
+      VALUES (?, ?, ?)
+      ON CONFLICT(process_number) DO UPDATE SET
+        process_id = excluded.process_id,
+        updated_at = excluded.updated_at`
+    ).bind(processNumber, processId, now).run();
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function sipacSessionCookies(headers) {
+  if (typeof headers.getSetCookie === 'function') {
+    const values = headers.getSetCookie();
+    if (values.length) return values.map(value => value.split(';', 1)[0]).join('; ');
+  }
+  const raw = headers.get('set-cookie') || '';
+  return [...raw.matchAll(/(?:^|,\s*)([^=;,\s]+=[^;,]+)/g)].map(match => match[1]).join('; ');
+}
+
+function sipacLookupError(message, status) {
+  const error = new Error(message);
+  error.status = status;
+  return error;
+}
+
+async function resolveSipacProcess(db, parsed) {
+  const cached = await readCachedSipacProcess(db, parsed.processNumber);
+  if (cached?.processId) return { processId: Number(cached.processId), cacheStatus: 'HIT' };
+
+  const searchUrl = 'https://sipac.ufpb.br/public/jsp/processos/consulta_processo.jsf';
+  let formResponse;
+  try {
+    formResponse = await fetch(searchUrl, {
+      headers: { accept: 'text/html,application/xhtml+xml', 'user-agent': 'Mozilla/5.0' },
+      redirect: 'follow'
+    });
+  } catch {
+    throw sipacLookupError('O SIPAC não respondeu à consulta agora. Tente novamente em instantes.', 502);
+  }
+  if (!formResponse.ok) throw sipacLookupError('O SIPAC não disponibilizou o formulário de consulta agora.', 502);
+
+  const formHtml = await formResponse.text();
+  const action = formHtml.match(/<form[^>]+id=["']processoForm["'][^>]+action=["']([^"']+)["']/i)?.[1]?.replaceAll('&amp;', '&');
+  const viewState = formHtml.match(/name=["']javax\.faces\.ViewState["'][^>]+value=["']([^"']+)["']/i)?.[1];
+  const submitName = formHtml.match(/<input[^>]+type=["']submit["'][^>]+name=["']([^"']+)["'][^>]+value=["']Consultar Processo["']/i)?.[1];
+  if (!action || !viewState || !submitName) {
+    throw sipacLookupError('O formulário público do SIPAC mudou e precisa ser atualizado no app.', 502);
+  }
+
+  const body = new URLSearchParams({
+    processoForm: 'processoForm',
+    aba: 'p-processos',
+    tipo_consulta: '100',
+    RADICAL_PROTOCOLO: parsed.radical,
+    NUM_PROTOCOLO: parsed.sequence,
+    ANO_PROTOCOLO: parsed.year,
+    DV_PROTOCOLO: parsed.verifier,
+    INTERESSADO: '',
+    CPF_CNPJ: '',
+    'javax.faces.ViewState': viewState
+  });
+  body.set(submitName, 'Consultar Processo');
+
+  const cookies = sipacSessionCookies(formResponse.headers);
+  let resultResponse;
+  try {
+    resultResponse = await fetch(new URL(action, searchUrl).toString(), {
+      method: 'POST',
+      headers: {
+        accept: 'text/html,application/xhtml+xml',
+        'content-type': 'application/x-www-form-urlencoded',
+        cookie: cookies,
+        origin: 'https://sipac.ufpb.br',
+        referer: searchUrl,
+        'user-agent': 'Mozilla/5.0'
+      },
+      body: body.toString(),
+      redirect: 'follow'
+    });
+  } catch {
+    throw sipacLookupError('O SIPAC não respondeu à pesquisa do processo agora.', 502);
+  }
+  if (!resultResponse.ok) throw sipacLookupError('A consulta processual do SIPAC está temporariamente indisponível.', 502);
+
+  const resultHtml = await resultResponse.text();
+  const processId = Number(resultHtml.match(/processo_detalhado\.jsf\?id=(\d+)/i)?.[1]);
+  if (!Number.isInteger(processId) || processId < 1) {
+    throw sipacLookupError('Processo não localizado no SIPAC Público. Confira o número e os dígitos verificadores.', 404);
+  }
+
+  await writeCachedSipacProcess(db, parsed.processNumber, processId, Math.floor(Date.now() / 1000));
+  return { processId, cacheStatus: 'MISS' };
+}
+
 const API_CORS_HEADERS = {
   'access-control-allow-origin': '*',
   'access-control-allow-methods': 'GET, POST, OPTIONS',
@@ -285,6 +414,11 @@ function jsonResponse(value, status = 200, extraHeaders = {}) {
       ...extraHeaders
     }
   });
+}
+
+function sipacErrorPage(message, status) {
+  const html = `<!doctype html><html lang="pt-BR"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Consulta processual</title><body style="margin:0;padding:28px;background:#f4f7f4;color:#1f2c28;font:16px/1.5 system-ui,sans-serif"><main style="max-width:620px;margin:8vh auto;padding:26px;border:1px solid #d7e2de;border-radius:18px;background:#fff"><h1 style="margin:0 0 10px;font-size:1.35rem">Consulta processual</h1><p style="margin:0 0 18px">${message}</p><a href="https://sipac.ufpb.br/public/jsp/processos/consulta_processo.jsf" style="color:#0e625a;font-weight:750">Abrir a consulta pública do SIPAC</a></main></body></html>`;
+  return new Response(html, { status, headers: { 'cache-control': 'no-store', 'content-type': 'text/html; charset=utf-8' } });
 }
 
 function parsePermanentNotice(value) {
@@ -348,9 +482,48 @@ function pncpLinksResponse(links) {
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
-    const apiPath = ['/edital-cache', '/pncp-link-cache', '/pncp-proxy', '/analytics/visit'].includes(url.pathname);
+    const apiPath = ['/edital-cache', '/pncp-link-cache', '/pncp-proxy', '/analytics/visit', '/sipac-process'].includes(url.pathname);
     if (apiPath && request.method === 'OPTIONS') {
       return new Response(null, { status: 204, headers: API_CORS_HEADERS });
+    }
+    if (url.pathname === '/sipac-process') {
+      if (request.method !== 'GET') return jsonResponse({ error: 'Método não permitido.' }, 405, { allow: 'GET' });
+      const parsed = parseSipacProcessNumber(url.searchParams.get('numero'));
+      const mode = String(url.searchParams.get('mode') || '');
+      const wantsRedirect = mode === 'public' || mode === 'logged';
+      if (!parsed) {
+        const message = 'Informe um processo completo da UFPB no formato 23074.000000/2026-00.';
+        return wantsRedirect ? sipacErrorPage(message, 400) : jsonResponse({ error: message }, 400);
+      }
+      if (mode && !wantsRedirect) return jsonResponse({ error: 'Modalidade de acesso inválida.' }, 400);
+
+      try {
+        const resolved = await resolveSipacProcess(env.DB, parsed);
+        const publicUrl = `https://sipac.ufpb.br/public/jsp/processos/processo_detalhado.jsf?id=${resolved.processId}`;
+        const loggedUrl = `https://sipac.ufpb.br/sipac/protocolo/processo/processo.jsf?id=${resolved.processId}`;
+        if (wantsRedirect) {
+          return new Response(null, {
+            status: 302,
+            headers: {
+              'cache-control': 'no-store',
+              location: mode === 'logged' ? loggedUrl : publicUrl
+            }
+          });
+        }
+        return jsonResponse({
+          numero: parsed.processNumber,
+          id: resolved.processId,
+          sipacPublico: publicUrl,
+          sipacLogado: loggedUrl
+        }, 200, {
+          'x-cache-scope': 'permanent-database',
+          'x-cache-status': resolved.cacheStatus
+        });
+      } catch (error) {
+        const status = Number(error?.status) || 502;
+        const message = error instanceof Error ? error.message : 'Não foi possível consultar o processo no SIPAC.';
+        return wantsRedirect ? sipacErrorPage(message, status) : jsonResponse({ error: message }, status);
+      }
     }
     if (url.pathname === '/analytics/visit') {
       if (request.method === 'GET') {

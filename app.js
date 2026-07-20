@@ -51,6 +51,7 @@
     sipacTermYear: $('sipacTermYearInput'),
     sipacGuide: $('sipacGuideInput'),
     sipacGuideYear: $('sipacGuideYearInput'),
+    sipacProcess: $('sipacProcessInput'),
     transparencyUasg: $('transparencyUasgInput'),
     management: $('managementInput'),
     transparencyYear: $('transparencyYearInput'),
@@ -74,6 +75,37 @@
     return window.location.hostname.endsWith('.chatgpt.site')
       ? normalizedPath
       : `${SHARED_API_ORIGIN}${normalizedPath}`;
+  }
+
+  function formatSipacProcess(value) {
+    const digits = onlyDigits(value).slice(0, 17);
+    const radical = digits.slice(0, 5);
+    const sequence = digits.slice(5, 11);
+    const year = digits.slice(11, 15);
+    const verifier = digits.slice(15, 17);
+    return [
+      radical,
+      sequence ? `.${sequence}` : '',
+      year ? `/${year}` : '',
+      verifier ? `-${verifier}` : ''
+    ].join('');
+  }
+
+  function normalizedSipacProcess() {
+    const digits = onlyDigits(fields.sipacProcess.value);
+    if (digits.length !== 17) return '';
+    return `${digits.slice(0, 5)}.${digits.slice(5, 11)}/${digits.slice(11, 15)}-${digits.slice(15, 17)}`;
+  }
+
+  function updateSipacProcessLinks() {
+    const processNumber = normalizedSipacProcess();
+    for (const [id, accessMode] of [['sipacProcessPublicBtn', 'public'], ['sipacProcessLoggedBtn', 'logged']]) {
+      const link = $(id);
+      link.href = processNumber
+        ? sharedApiUrl(`/sipac-process?numero=${encodeURIComponent(processNumber)}&mode=${accessMode}`)
+        : '#';
+      link.setAttribute('aria-disabled', String(!processNumber));
+    }
   }
 
   function anonymousDeviceId() {
@@ -168,6 +200,7 @@
       sipacTermYear: fields.sipacTermYear.value,
       sipacGuide: fields.sipacGuide.value,
       sipacGuideYear: fields.sipacGuideYear.value,
+      sipacProcess: fields.sipacProcess.value,
       transparencyUasg: fields.transparencyUasg.value,
       management: fields.management.value,
       transparencyYear: fields.transparencyYear.value,
@@ -308,6 +341,7 @@
       $('noticeStatus').textContent = 'Os links do PNCP e o edital serão localizados automaticamente.';
       $('noticeStatus').dataset.state = 'idle';
     }
+    updateSipacProcessLinks();
     saveForm();
   }
 
@@ -754,6 +788,7 @@
     fields.sipacTermYear.value = stored.sipacTermYear || DEFAULT_FORM_YEAR;
     fields.sipacGuide.value = stored.sipacGuide || '123';
     fields.sipacGuideYear.value = stored.sipacGuideYear || DEFAULT_FORM_YEAR;
+    fields.sipacProcess.value = formatSipacProcess(stored.sipacProcess || '23074.058302/2026-14');
     fields.transparencyUasg.value = stored.transparencyUasg || '153065';
     fields.management.value = stored.management || '15231';
     const restoredTransparencyUnit = uasgs.find(record => record.c === onlyDigits(fields.transparencyUasg.value));
@@ -810,6 +845,10 @@
     fields.item.addEventListener('input', () => { fields.item.value = onlyDigits(fields.item.value).slice(0, 5); update(); });
     fields.management.addEventListener('input', () => { fields.management.value = onlyDigits(fields.management.value).slice(0, 5); update(); });
     fields.commitment.addEventListener('input', () => { fields.commitment.value = onlyDigits(fields.commitment.value).slice(0, 6); update(); });
+    fields.sipacProcess.addEventListener('input', () => {
+      fields.sipacProcess.value = formatSipacProcess(fields.sipacProcess.value);
+      update();
+    });
     fields.uasgInput.addEventListener('focus', renderSuggestions);
     fields.uasgInput.addEventListener('input', renderSuggestions);
     fields.uasgInput.addEventListener('blur', () => window.setTimeout(() => {
@@ -839,6 +878,7 @@
     bindEnter([fields.sipacCommitment, fields.sipacCommitmentYear], () => $('sipacCommitmentBtn').click());
     bindEnter([fields.sipacTerm, fields.sipacTermYear], () => $('sipacTermBtn').click());
     bindEnter([fields.sipacGuide, fields.sipacGuideYear], () => $('sipacGuideBtn').click());
+    bindEnter([fields.sipacProcess], () => $('sipacProcessPublicBtn').click());
     bindEnter([fields.transparencyUasg, fields.management, fields.transparencyYear, fields.commitment], () => {
       const record = uasgs.find(unit => unit.c === transparencyUasgCode());
       if (record) applyManagementForUnit(record);
@@ -901,6 +941,18 @@
         : '';
       openUrl(url, `SIPAC · Guia de movimentação ${number}/${year}`);
     });
+    for (const [id, accessLabel] of [['sipacProcessPublicBtn', 'SIPAC Público'], ['sipacProcessLoggedBtn', 'SIPAC Logado']]) {
+      $(id).addEventListener('click', event => {
+        const processNumber = normalizedSipacProcess();
+        if (!processNumber) {
+          event.preventDefault();
+          fields.sipacProcess.focus();
+          showToast('Informe o número completo do processo, incluindo os dígitos verificadores.');
+          return;
+        }
+        remember(`${accessLabel} · ${processNumber}`, event.currentTarget.href);
+      });
+    }
     $('transparencyBtn').addEventListener('click', () => {
       const uasg = transparencyUasgCode();
       const managementDigits = onlyDigits(fields.management.value);

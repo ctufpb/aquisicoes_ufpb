@@ -33,3 +33,9 @@ export const deviceVisits = sqliteTable("device_visits", {
   lastSeen: integer("last_seen").notNull(),
   openCount: integer("open_count").notNull().default(1),
 });
+
+export const sipacProcessCache = sqliteTable("sipac_process_cache", {
+  processNumber: text("process_number").primaryKey(),
+  processId: integer("process_id").notNull(),
+  updatedAt: integer("updated_at").notNull(),
+});

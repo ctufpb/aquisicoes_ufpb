@@ -11,7 +11,7 @@
   <link rel="manifest" href="manifest.json" />
   <link rel="icon" href="icon-192.png?v=2" type="image/png" />
   <link rel="apple-touch-icon" href="icon-192.png?v=2" />
-  <link rel="stylesheet" href="style.css?v=1.0.3-access-totals" />
+  <link rel="stylesheet" href="style.css?v=1.0.3-sipac-process" />
 </head>
 <body>
   <div class="app-shell">
@@ -111,6 +111,17 @@
               <img src="sipac-ufpb.webp" alt="Universidade Federal da Paraíba — SIPAC" />
             </div>
             <div class="tool-card-body">
+              <div class="sipac-process-tool">
+                <label class="field sipac-process-field">
+                  <span>Consulta processual</span>
+                  <input id="sipacProcessInput" inputmode="numeric" value="23074.058302/2026-14" maxlength="20" placeholder="23074.000000/2026-00" autocomplete="off" />
+                </label>
+                <div class="sipac-process-actions">
+                  <a class="sipac-process-public" id="sipacProcessPublicBtn" href="#" target="_blank" rel="noopener noreferrer">SIPAC Público <span aria-hidden="true">🔎</span></a>
+                  <a class="sipac-process-logged" id="sipacProcessLoggedBtn" href="#" target="_blank" rel="noopener noreferrer">SIPAC Logado <span aria-hidden="true">🔐</span></a>
+                </div>
+                <small class="sipac-process-help">O ID será localizado automaticamente. No acesso logado, entre no SIPAC se solicitado e clique novamente.</small>
+              </div>
               <div class="inline-fields">
                 <label class="field"><span>Requisição</span><input id="sipacRequestInput" inputmode="numeric" value="123" /></label>
                 <label class="field year-field"><span>Ano</span><input id="sipacYearInput" inputmode="numeric" value="2026" minlength="4" maxlength="4" pattern="[0-9]{4}" /></label>
@@ -219,6 +230,6 @@
     </section>
   </div>
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
-  <script src="app.js?v=1.0.3-access-totals" defer></script>
+  <script src="app.js?v=1.0.3-sipac-process" defer></script>
 </body>
 </html>
