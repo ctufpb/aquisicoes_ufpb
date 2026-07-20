@@ -1,4 +1,4 @@
-const CACHE_NAME = 'consulta-aquisicoes-v1.0.3-local-history';
+const CACHE_NAME = 'consulta-aquisicoes-v1.0.3-process-layout';
 const ASSETS = [
   './',
   './index.html',

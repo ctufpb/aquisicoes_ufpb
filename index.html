@@ -11,7 +11,7 @@
   <link rel="manifest" href="manifest.json" />
   <link rel="icon" href="icon-192.png?v=2" type="image/png" />
   <link rel="apple-touch-icon" href="icon-192.png?v=2" />
-  <link rel="stylesheet" href="style.css?v=1.0.3-local-history" />
+  <link rel="stylesheet" href="style.css?v=1.0.3-process-layout" />
 </head>
 <body>
   <div class="app-shell">
@@ -140,9 +140,9 @@
                 <span class="sipac-process-title">Consulta processual</span>
                 <div class="sipac-process-parts">
                   <label class="field sipac-process-fixed"><span>Radical</span><input value="23074" readonly aria-label="Radical fixo do processo" /></label>
-                  <label class="field"><span>Número</span><input id="sipacProcessNumberInput" inputmode="numeric" value="058302" maxlength="6" placeholder="000000" autocomplete="off" /></label>
+                  <label class="field"><span>Número</span><input id="sipacProcessNumberInput" inputmode="numeric" value="058753" maxlength="6" placeholder="000000" autocomplete="off" /></label>
                   <label class="field sipac-process-year"><span>Ano</span><input id="sipacProcessYearInput" inputmode="numeric" value="2026" minlength="4" maxlength="4" pattern="[0-9]{4}" autocomplete="off" /></label>
-                  <label class="field sipac-process-fixed sipac-process-verifier"><span>DV</span><input value="99" readonly aria-label="Dígitos verificadores fixos" /></label>
+                  <label class="field sipac-process-verifier"><span>DV</span><input id="sipacProcessVerifierInput" inputmode="numeric" value="59" minlength="2" maxlength="2" pattern="[0-9]{2}" autocomplete="off" aria-label="Dígitos verificadores do processo" /></label>
                 </div>
                 <div class="sipac-process-actions">
                   <a class="sipac-process-public" id="sipacProcessPublicBtn" href="#" target="_blank" rel="noopener noreferrer">SIPAC Público <span aria-hidden="true">🔎</span></a>
@@ -185,13 +185,12 @@
                   </div>
                   <small class="field-help" id="transparencyUasgHelp">Carregando base de UASGs…</small>
                 </label>
-                <label class="field"><span>Gestão</span><input id="managementInput" inputmode="numeric" value="15231" maxlength="5" aria-describedby="managementHelp" /></label>
-                <label class="field"><span>Ano</span><input id="transparencyYearInput" inputmode="numeric" value="2026" minlength="4" maxlength="4" pattern="[0-9]{4}" aria-describedby="transparencyYearAdvisory" /></label>
-                <label class="field commitment-field"><span>Empenho</span><input id="commitmentInput" inputmode="numeric" value="1234" maxlength="6" /></label>
-                <small class="field-help management-help" id="managementHelp">Gestão 15231 preenchida automaticamente para a UFPB.</small>
+                <label class="field management-field"><span>Gestão</span><input id="managementInput" inputmode="numeric" value="15231" maxlength="5" /></label>
+                <label class="field transparency-year-field"><span>Ano</span><input id="transparencyYearInput" inputmode="numeric" value="2026" minlength="4" maxlength="4" pattern="[0-9]{4}" aria-describedby="transparencyYearAdvisory" /></label>
+                <label class="field commitment-field"><span>Empenho</span><input id="commitmentInput" inputmode="numeric" value="1234" maxlength="6" aria-describedby="transparencyPreview" /></label>
                 <button class="wide-tool-button" id="transparencyBtn" type="button">Consultar empenho <span>🔎</span></button>
+                <small class="field-help transparency-preview" id="transparencyPreview"></small>
               </div>
-              <p class="field-help" id="transparencyPreview"></p>
               <p class="year-advisory" id="transparencyYearAdvisory" hidden></p>
             </div>
           </article>
@@ -254,6 +253,6 @@
     </section>
   </div>
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
-  <script src="app.js?v=1.0.3-local-history" defer></script>
+  <script src="app.js?v=1.0.3-process-layout" defer></script>
 </body>
 </html>
