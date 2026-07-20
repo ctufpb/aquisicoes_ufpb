@@ -3,7 +3,11 @@
 
   const $ = id => document.getElementById(id);
   const FORM_KEY = 'pregao-facil.form';
-  const RECENT_KEY = 'pregao-facil.recent';
+  const LEGACY_RECENT_KEY = 'pregao-facil.recent';
+  const COMPRAS_RECENT_KEY = 'pregao-facil.recent.compras';
+  const SIPAC_RECENT_KEY = 'pregao-facil.recent.sipac';
+  const PROCESS_RECENT_KEY = 'pregao-facil.recent.processes';
+  const PROCESS_FAVORITES_KEY = 'pregao-facil.favorite-processes';
   const FAVORITES_KEY = 'pregao-facil.favorite-uasgs';
   const DEVICE_ID_KEY = 'pregao-facil.anonymous-device-id';
   const UFPB_CNPJ = '24098477000110';
@@ -29,14 +33,33 @@
   let mode = 'current';
   let uasgs = UFPB_FALLBACK;
   let dataReady = false;
-  let recent = readStored(RECENT_KEY, []);
+  const legacyRecent = normalizeRecentEntries(readStored(LEGACY_RECENT_KEY, []));
+  const storedComprasRecent = readStored(COMPRAS_RECENT_KEY, null);
+  const storedSipacRecent = readStored(SIPAC_RECENT_KEY, null);
+  const storedProcessRecent = readStored(PROCESS_RECENT_KEY, null);
+  let comprasRecent = Array.isArray(storedComprasRecent)
+    ? normalizeRecentEntries(storedComprasRecent)
+    : legacyRecent.filter(entry => !isSipacEntry(entry) && !isTransparencyEntry(entry));
+  let sipacRecent = Array.isArray(storedSipacRecent)
+    ? normalizeRecentEntries(storedSipacRecent)
+    : legacyRecent.filter(entry => isSipacEntry(entry) && !isProcessEntry(entry));
+  let processRecent = Array.isArray(storedProcessRecent)
+    ? normalizeProcessEntries(storedProcessRecent)
+    : normalizeProcessEntries(legacyRecent.filter(isProcessEntry));
+  let favoriteProcesses = normalizeProcessEntries(readStored(PROCESS_FAVORITES_KEY, []), Number.POSITIVE_INFINITY);
   const storedFavorites = readStored(FAVORITES_KEY, null);
   let favorites = new Set(Array.isArray(storedFavorites) ? storedFavorites : DEFAULT_FAVORITES);
   let installPrompt = null;
   let installed = window.matchMedia('(display-mode: standalone)').matches || Boolean(navigator.standalone);
   let toastTimer = 0;
   const pncpPurchaseCache = new Map();
-  try { localStorage.removeItem('pregao-facil.pncp-purchases'); } catch { /* Cache antigo removido quando permitido. */ }
+  try {
+    localStorage.removeItem('pregao-facil.pncp-purchases');
+    localStorage.setItem(COMPRAS_RECENT_KEY, JSON.stringify(comprasRecent));
+    localStorage.setItem(SIPAC_RECENT_KEY, JSON.stringify(sipacRecent));
+    localStorage.setItem(PROCESS_RECENT_KEY, JSON.stringify(processRecent));
+    localStorage.removeItem(LEGACY_RECENT_KEY);
+  } catch { /* Migração local ignorada quando o armazenamento não estiver disponível. */ }
 
   const fields = {
     uasgInput: $('uasgInput'),
@@ -71,6 +94,65 @@
 
   function onlyDigits(value) {
     return String(value || '').replace(/\D/g, '');
+  }
+
+  function formatTombamento(value) {
+    const digits = onlyDigits(value).slice(0, 12);
+    if (digits.length <= 3) return digits;
+    if (digits.length <= 6) return digits.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+    const prefix = digits.slice(0, -6);
+    const suffix = digits.slice(-6);
+    return `${prefix}-${suffix.slice(0, 3)}.${suffix.slice(3)}`;
+  }
+
+  function normalizeRecentEntries(entries, limit = 5) {
+    if (!Array.isArray(entries)) return [];
+    const normalized = [];
+    for (const entry of entries) {
+      const label = String(entry?.label || '').trim();
+      const url = String(entry?.url || '').trim();
+      if (!label || !url || normalized.some(item => item.url === url)) continue;
+      normalized.push({ label, url, at: Number(entry?.at) || Date.now() });
+      if (normalized.length >= limit) break;
+    }
+    return normalized;
+  }
+
+  function isTransparencyEntry(entry) {
+    return /^Portal da Transparência\b/i.test(String(entry?.label || ''));
+  }
+
+  function isProcessEntry(entry) {
+    return /^SIPAC (Público|Logado)\b/i.test(String(entry?.label || '')) || Boolean(entry?.processNumber);
+  }
+
+  function isSipacEntry(entry) {
+    return /^SIPAC\b/i.test(String(entry?.label || ''));
+  }
+
+  function normalizeProcessEntries(entries, limit = 3) {
+    if (!Array.isArray(entries)) return [];
+    const normalized = [];
+    for (const entry of entries) {
+      const source = `${entry?.processNumber || ''} ${entry?.label || ''}`;
+      const processNumber = source.match(/23074\.\d{1,6}\/\d{4}-99/)?.[0] || '';
+      const url = String(entry?.url || '').trim();
+      if (!processNumber || !url || normalized.some(item => item.processNumber === processNumber)) continue;
+      const accessMode = entry?.accessMode === 'logged' || /SIPAC Logado/i.test(String(entry?.label || '')) ? 'logged' : 'public';
+      normalized.push({
+        processNumber,
+        accessMode,
+        accessLabel: accessMode === 'logged' ? 'SIPAC Logado' : 'SIPAC Público',
+        url,
+        at: Number(entry?.at) || Date.now()
+      });
+      if (normalized.length >= limit) break;
+    }
+    return normalized;
+  }
+
+  function storeLocal(key, value) {
+    try { localStorage.setItem(key, JSON.stringify(value)); } catch { /* Persistência local opcional. */ }
   }
 
   function sharedApiUrl(path) {
@@ -217,7 +299,7 @@
       sipacGuideYear: fields.sipacGuideYear.value,
       sipacProcessNumber: fields.sipacProcessNumber.value,
       sipacProcessYear: fields.sipacProcessYear.value,
-      sipacAsset: fields.sipacAsset.value,
+      sipacAsset: onlyDigits(fields.sipacAsset.value),
       transparencyUasg: fields.transparencyUasg.value,
       management: fields.management.value,
       transparencyYear: fields.transparencyYear.value,
@@ -285,18 +367,40 @@
     toastTimer = window.setTimeout(() => toast.classList.remove('visible'), 4200);
   }
 
-  function remember(label, url) {
-    recent = [{ label, url, at: Date.now() }, ...recent.filter(entry => entry.url !== url)].slice(0, 5);
-    localStorage.setItem(RECENT_KEY, JSON.stringify(recent));
+  function rememberCompras(label, url) {
+    comprasRecent = [{ label, url, at: Date.now() }, ...comprasRecent.filter(entry => entry.url !== url)].slice(0, 5);
+    storeLocal(COMPRAS_RECENT_KEY, comprasRecent);
     renderRecent();
   }
 
-  function openUrl(url, label) {
+  function rememberSipac(label, url) {
+    sipacRecent = [{ label, url, at: Date.now() }, ...sipacRecent.filter(entry => entry.url !== url)].slice(0, 5);
+    storeLocal(SIPAC_RECENT_KEY, sipacRecent);
+    renderSipacRecent();
+  }
+
+  function rememberProcess(processNumber, accessMode, url) {
+    const entry = {
+      processNumber,
+      accessMode,
+      accessLabel: accessMode === 'logged' ? 'SIPAC Logado' : 'SIPAC Público',
+      url,
+      at: Date.now()
+    };
+    processRecent = [entry, ...processRecent.filter(item => item.processNumber !== processNumber)].slice(0, 3);
+    favoriteProcesses = favoriteProcesses.map(item => item.processNumber === processNumber ? entry : item);
+    storeLocal(PROCESS_RECENT_KEY, processRecent);
+    storeLocal(PROCESS_FAVORITES_KEY, favoriteProcesses);
+    renderProcessHistory();
+  }
+
+  function openUrl(url, label, history = 'compras') {
     if (!url) {
       showToast('Confira os campos da consulta.');
       return;
     }
-    remember(label, url);
+    if (history === 'sipac') rememberSipac(label, url);
+    else if (history === 'compras') rememberCompras(label, url);
     window.open(url, '_blank', 'noopener,noreferrer');
   }
 
@@ -484,7 +588,14 @@
   function renderRecent() {
     const list = $('recentList');
     list.replaceChildren();
-    for (const entry of recent) {
+    if (!comprasRecent.length) {
+      const empty = document.createElement('p');
+      empty.className = 'empty-history';
+      empty.textContent = 'As consultas do Compras.gov aparecerão aqui.';
+      list.append(empty);
+      return;
+    }
+    for (const entry of comprasRecent) {
       const button = document.createElement('button');
       button.type = 'button';
       const label = document.createElement('span');
@@ -494,6 +605,79 @@
       button.append(label, arrow);
       button.addEventListener('click', () => openUrl(entry.url, entry.label));
       list.append(button);
+    }
+  }
+
+  function renderSipacRecent() {
+    const list = $('sipacRecentList');
+    list.replaceChildren();
+    if (!sipacRecent.length) {
+      const empty = document.createElement('p');
+      empty.className = 'empty-history';
+      empty.textContent = 'As consultas do SIPAC aparecerão aqui.';
+      list.append(empty);
+      return;
+    }
+    for (const entry of sipacRecent) {
+      const button = document.createElement('button');
+      button.type = 'button';
+      const label = document.createElement('span');
+      label.textContent = entry.label.replace(/^SIPAC · /, '');
+      const search = document.createElement('b');
+      search.textContent = '🔎';
+      button.append(label, search);
+      button.addEventListener('click', () => openUrl(entry.url, entry.label, 'sipac'));
+      list.append(button);
+    }
+  }
+
+  function toggleProcessFavorite(entry) {
+    const isFavorite = favoriteProcesses.some(item => item.processNumber === entry.processNumber);
+    favoriteProcesses = isFavorite
+      ? favoriteProcesses.filter(item => item.processNumber !== entry.processNumber)
+      : [entry, ...favoriteProcesses.filter(item => item.processNumber !== entry.processNumber)];
+    storeLocal(PROCESS_FAVORITES_KEY, favoriteProcesses);
+    renderProcessHistory();
+  }
+
+  function renderProcessHistory() {
+    const list = $('processHistoryList');
+    list.replaceChildren();
+    const favoriteNumbers = new Set(favoriteProcesses.map(entry => entry.processNumber));
+    const entries = [...favoriteProcesses, ...processRecent.filter(entry => !favoriteNumbers.has(entry.processNumber))];
+    if (!entries.length) {
+      const empty = document.createElement('p');
+      empty.className = 'empty-history';
+      empty.textContent = 'Os 3 últimos processos aparecerão aqui.';
+      list.append(empty);
+      return;
+    }
+    for (const entry of entries) {
+      const row = document.createElement('div');
+      row.className = 'process-history-row';
+
+      const link = document.createElement('a');
+      link.className = 'process-history-open';
+      link.href = entry.url;
+      link.target = '_blank';
+      link.rel = 'noopener noreferrer';
+      const number = document.createElement('strong');
+      number.textContent = entry.processNumber;
+      const access = document.createElement('small');
+      access.textContent = entry.accessLabel;
+      link.append(number, access);
+      link.addEventListener('click', () => rememberProcess(entry.processNumber, entry.accessMode, entry.url));
+
+      const favoriteButton = document.createElement('button');
+      const isFavorite = favoriteNumbers.has(entry.processNumber);
+      favoriteButton.type = 'button';
+      favoriteButton.className = isFavorite ? 'favorite-button is-favorite' : 'favorite-button';
+      favoriteButton.textContent = '★';
+      favoriteButton.setAttribute('aria-label', isFavorite ? `Desfavoritar processo ${entry.processNumber}` : `Favoritar processo ${entry.processNumber}`);
+      favoriteButton.addEventListener('click', () => toggleProcessFavorite(entry));
+
+      row.append(link, favoriteButton);
+      list.append(row);
     }
   }
 
@@ -702,7 +886,7 @@
 
   function startNoticeDownload(info, noticeUrl) {
     const label = `${info.uasg} · Edital PE ${info.tender}/${info.year}`;
-    remember(label, noticeUrl);
+    rememberCompras(label, noticeUrl);
     const downloadLink = document.createElement('a');
     downloadLink.href = noticeUrl;
     downloadLink.download = '';
@@ -809,7 +993,7 @@
     const storedSipacProcess = onlyDigits(stored.sipacProcess || '');
     fields.sipacProcessNumber.value = onlyDigits(stored.sipacProcessNumber || storedSipacProcess.slice(5, 11) || '058302').slice(0, 6);
     fields.sipacProcessYear.value = onlyDigits(stored.sipacProcessYear || storedSipacProcess.slice(11, 15) || DEFAULT_FORM_YEAR).slice(0, 4);
-    fields.sipacAsset.value = onlyDigits(stored.sipacAsset || '65164707').slice(0, 12);
+    fields.sipacAsset.value = formatTombamento(stored.sipacAsset || '65164707');
     fields.transparencyUasg.value = stored.transparencyUasg || '153065';
     fields.management.value = stored.management || '15231';
     const restoredTransparencyUnit = uasgs.find(record => record.c === onlyDigits(fields.transparencyUasg.value));
@@ -871,7 +1055,7 @@
       update();
     });
     fields.sipacAsset.addEventListener('input', () => {
-      fields.sipacAsset.value = onlyDigits(fields.sipacAsset.value).slice(0, 12);
+      fields.sipacAsset.value = formatTombamento(fields.sipacAsset.value);
       update();
     });
     fields.uasgInput.addEventListener('focus', renderSuggestions);
@@ -941,13 +1125,13 @@
       const number = onlyDigits(fields.sipacRequest.value);
       const year = requireFourDigitYear(fields.sipacYear);
       if (!year) return;
-      openUrl(number && year ? `https://sipac.ufpb.br/sipac/buscaRequisicao.do?requisicao.numero=${number}&requisicao.ano=${year}` : '', `SIPAC · Requisição ${number}/${year}`);
+      openUrl(number && year ? `https://sipac.ufpb.br/sipac/buscaRequisicao.do?requisicao.numero=${number}&requisicao.ano=${year}` : '', `SIPAC · Requisição ${number}/${year}`, 'sipac');
     });
     $('sipacCommitmentBtn').addEventListener('click', () => {
       const number = onlyDigits(fields.sipacCommitment.value);
       const year = requireFourDigitYear(fields.sipacCommitmentYear);
       if (!year) return;
-      openUrl(number && year ? `https://sipac.ufpb.br/sipac/consultaEmpenho.do?numero=${number}&ano=${year}&idUnidadeGestora=605&acao=13` : '', `SIPAC · Empenho ${number}/${year}`);
+      openUrl(number && year ? `https://sipac.ufpb.br/sipac/consultaEmpenho.do?numero=${number}&ano=${year}&idUnidadeGestora=605&acao=13` : '', `SIPAC · Empenho ${number}/${year}`, 'sipac');
     });
     $('sipacTermBtn').addEventListener('click', () => {
       const number = onlyDigits(fields.sipacTerm.value);
@@ -956,7 +1140,7 @@
       const url = number
         ? `https://sipac.ufpb.br/sipac/consultarTermoGuia.do?tipoTombamentoTermo=10&popup=true&tipoConsulta=42&numero=${number}&ano=${year}`
         : '';
-      openUrl(url, `SIPAC · Termo de responsabilidade ${number}/${year}`);
+      openUrl(url, `SIPAC · Termo de responsabilidade ${number}/${year}`, 'sipac');
     });
     $('sipacGuideBtn').addEventListener('click', () => {
       const number = onlyDigits(fields.sipacGuide.value);
@@ -965,7 +1149,7 @@
       const url = number
         ? `https://sipac.ufpb.br/sipac/consultarTermoGuia.do?tipoConsulta=99&numero=${number}&ano=${year}`
         : '';
-      openUrl(url, `SIPAC · Guia de movimentação ${number}/${year}`);
+      openUrl(url, `SIPAC · Guia de movimentação ${number}/${year}`, 'sipac');
     });
     for (const [id, accessLabel] of [['sipacProcessPublicBtn', 'SIPAC Público'], ['sipacProcessLoggedBtn', 'SIPAC Logado']]) {
       $(id).addEventListener('click', event => {
@@ -987,7 +1171,7 @@
           showToast('Confira o número e o ano do processo.');
           return;
         }
-        remember(`${accessLabel} · ${processNumber}`, event.currentTarget.href);
+        rememberProcess(processNumber, accessLabel === 'SIPAC Logado' ? 'logged' : 'public', event.currentTarget.href);
       });
     }
     $('sipacAssetBtn').addEventListener('click', event => {
@@ -998,7 +1182,7 @@
         showToast('Informe o número do tombamento.');
         return;
       }
-      remember(`SIPAC · Bem ${tombamento}`, event.currentTarget.href);
+      rememberSipac(`SIPAC · Bem ${formatTombamento(tombamento)}`, event.currentTarget.href);
     });
     $('transparencyBtn').addEventListener('click', () => {
       const uasg = transparencyUasgCode();
@@ -1020,12 +1204,23 @@
       const url = commitment
         ? `https://portaldatransparencia.gov.br/despesas/documento/empenho/${uasg}${management}${year}NE${commitment}`
         : '';
-      openUrl(url, `Portal da Transparência · ${uasg} · ${year}NE${commitment}`);
+      openUrl(url, `Portal da Transparência · ${uasg} · ${year}NE${commitment}`, 'none');
     });
     $('clearRecentBtn').addEventListener('click', () => {
-      recent = [];
-      localStorage.removeItem(RECENT_KEY);
+      comprasRecent = [];
+      try { localStorage.removeItem(COMPRAS_RECENT_KEY); } catch { /* Sem armazenamento local. */ }
       renderRecent();
+    });
+    $('clearSipacRecentBtn').addEventListener('click', () => {
+      sipacRecent = [];
+      try { localStorage.removeItem(SIPAC_RECENT_KEY); } catch { /* Sem armazenamento local. */ }
+      renderSipacRecent();
+    });
+    $('clearProcessRecentBtn').addEventListener('click', () => {
+      processRecent = [];
+      try { localStorage.removeItem(PROCESS_RECENT_KEY); } catch { /* Sem armazenamento local. */ }
+      renderProcessHistory();
+      if (favoriteProcesses.length) showToast('Pesquisas recentes limpas; os processos favoritos foram mantidos.');
     });
 
     $('installBtn').addEventListener('click', async () => {
@@ -1078,6 +1273,8 @@
   restoreForm();
   bindEvents();
   renderRecent();
+  renderSipacRecent();
+  renderProcessHistory();
   update();
   loadUasgs();
   recordAnonymousVisit();
