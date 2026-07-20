@@ -262,38 +262,32 @@
     form.remove();
   }
 
-  async function openSipacContractSearch(number, year) {
-    const searchTab = window.open('', 'sipacContractSearch');
-    if (!searchTab) {
-      showToast('O navegador bloqueou a nova aba. Permita a abertura e tente novamente.');
+  function openSipacContractSearch(number, year) {
+    if (!Array.isArray(sipacContractsIndex)) {
+      openSipacPublicContractsByYear(year);
+      showToast(`A base ainda está carregando. Abrindo a lista pública de ${year}.`);
       return;
     }
-    try {
-      searchTab.document.title = 'Consultando contrato…';
-      searchTab.document.body.innerHTML = '<p style="font:600 18px system-ui;padding:32px;color:#173f3a">Consultando contrato no SIPAC…</p>';
-    } catch { /* A aba pode já ter sido reutilizada de outra consulta. */ }
 
-    try {
-      const contracts = await loadSipacContractsIndex();
-      const matches = contracts.filter(contract => contract.numero === number && contract.ano === year);
-      if (matches.length === 1) {
-        const url = `https://sipac.ufpb.br/public/jsp/contratos/contrato_detalhamento.jsf?idContrato=${encodeURIComponent(matches[0].id)}`;
-        searchTab.location = url;
-        rememberSipac(`SIPAC · Contrato ${number}/${year}`, url);
-        showToast(`Contrato ${number}/${year} localizado na consulta pública do SIPAC.`);
+    const matches = sipacContractsIndex.filter(contract => contract.numero === number && contract.ano === year);
+    if (matches.length === 1) {
+      const url = `https://sipac.ufpb.br/public/jsp/contratos/contrato_detalhamento.jsf?idContrato=${encodeURIComponent(matches[0].id)}`;
+      const searchTab = window.open(url, 'sipacContractSearch');
+      if (!searchTab) {
+        showToast('O navegador bloqueou a nova aba. Permita a abertura e tente novamente.');
         return;
       }
+      rememberSipac(`SIPAC · Contrato ${number}/${year}`, url);
+      showToast(`Contrato ${number}/${year} localizado na consulta pública do SIPAC.`);
+      return;
+    }
 
-      openSipacPublicContractsByYear(year);
-      rememberSipac(`SIPAC · Contratos vigentes de ${year}`, 'https://sipac.ufpb.br/public/ContratosPublic.do?aba=p-contratos&acao=156');
-      if (matches.length > 1) {
-        showToast(`Há ${matches.length} contratos ${number}/${year}. Escolha o contratado na lista pública.`);
-      } else {
-        showToast(`O contrato ${number}/${year} não consta entre os contratos vigentes. Abrindo a lista de ${year}.`);
-      }
-    } catch {
-      openSipacPublicContractsByYear(year);
-      showToast(`Não foi possível consultar o índice agora. Abrindo a lista pública de ${year}.`);
+    openSipacPublicContractsByYear(year);
+    rememberSipac(`SIPAC · Contratos vigentes de ${year}`, 'https://sipac.ufpb.br/public/ContratosPublic.do?aba=p-contratos&acao=156');
+    if (matches.length > 1) {
+      showToast(`Há ${matches.length} contratos ${number}/${year}. Escolha o contratado na lista pública.`);
+    } else {
+      showToast(`O contrato ${number}/${year} não consta entre os contratos vigentes. Abrindo a lista de ${year}.`);
     }
   }
 

@@ -1,4 +1,4 @@
-const CACHE_NAME = 'consulta-aquisicoes-v1.0.3-sipac-public-contracts';
+const CACHE_NAME = 'consulta-aquisicoes-v1.0.3-sipac-public-contracts-direct';
 const ASSETS = [
   './',
   './index.html',
