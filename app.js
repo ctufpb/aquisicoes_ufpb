@@ -211,65 +211,23 @@
     link.setAttribute('aria-disabled', String(!url));
   }
 
-  function submitExternalForm(action, target, values) {
-    const form = document.createElement('form');
-    form.method = 'post';
-    form.action = action;
-    form.target = target;
-    form.hidden = true;
-    for (const [name, value] of Object.entries(values)) {
-      const input = document.createElement('input');
-      input.type = 'hidden';
-      input.name = name;
-      input.value = value;
-      form.append(input);
-    }
-    document.body.append(form);
-    form.submit();
-    form.remove();
-  }
-
-  function prepareSipacSearch({ prepareUrl, action, target, values, label, historyUrl }) {
-    const searchTab = window.open(prepareUrl, target);
+  function openSipacAssetSearch(tombamento) {
+    const prepareUrl = 'https://sipac.ufpb.br/sipac/prepararRelatorioPatrimonio.do?view=consultaBens&acao=consultar&tipo=1';
+    const resultUrl = sipacAssetSearchUrl();
+    const searchTab = window.open(prepareUrl, 'sipacAssetSearch');
     if (!searchTab) {
       showToast('O navegador bloqueou a nova aba. Permita a abertura e tente novamente.');
       return;
     }
-    rememberSipac(label, historyUrl || prepareUrl);
+    rememberSipac(`SIPAC · Bem ${formatTombamento(tombamento)}`, resultUrl);
     showToast('Preparando a consulta no SIPAC…');
-    window.setTimeout(() => submitExternalForm(action, target, values), 1400);
-  }
-
-  function openSipacAssetSearch(tombamento) {
-    const historyUrl = sipacAssetSearchUrl();
-    prepareSipacSearch({
-      prepareUrl: 'https://sipac.ufpb.br/sipac/prepararRelatorioPatrimonio.do?view=consultaBens&acao=consultar&tipo=1',
-      action: 'https://sipac.ufpb.br/sipac/gerarRelatorioBens.do',
-      target: 'sipacAssetSearch',
-      label: `SIPAC · Bem ${formatTombamento(tombamento)}`,
-      historyUrl,
-      values: {
-        tipoRelatorio: '1',
-        opcoesBusca: '36',
-        titulo: 'Consultar Bens',
-        view: 'consultaBens',
-        infoBem: 'true',
-        tombamento,
-        infoLocal: 'false',
-        infoDocumentos: 'false',
-        infoAquisicao: 'false',
-        infoRecolhimento: 'false',
-        infoAlienacao: 'false',
-        infoAcautelamento: 'false',
-        infoAjustesValorContabil: 'false',
-        infoVeiculo: 'false',
-        infoOutras: 'true',
-        tipoOrdenacao: '1',
-        tipoAgrupamento: '6',
-        formatoSaida: '1',
-        consultar: 'true'
+    window.setTimeout(() => {
+      if (searchTab.closed) {
+        showToast('A aba do SIPAC foi fechada antes da consulta.');
+        return;
       }
-    });
+      searchTab.location = resultUrl;
+    }, 2400);
   }
 
   function openSipacContractSearch(number, year) {
@@ -280,22 +238,14 @@
       numero: 'on',
       numeroContrato: number
     });
-    prepareSipacSearch({
-      prepareUrl: 'https://sipac.ufpb.br/sipac/buscaContratos.do?acao=145',
-      action: 'https://sipac.ufpb.br/sipac/buscaContratos.do',
-      target: 'sipacContractSearch',
-      label: `SIPAC · Contrato ${number}/${year}`,
-      historyUrl: `https://sipac.ufpb.br/sipac/buscaContratos.do?${query}`,
-      values: {
-        acao: '145',
-        ano: 'on',
-        anoInicial: year,
-        numero: 'on',
-        numeroContrato: number,
-        ordenacao: 'true',
-        opcoesOrdenacao: 'c.ano asc, c.numero asc '
-      }
-    });
+    const url = `https://sipac.ufpb.br/sipac/buscaContratos.do?${query}`;
+    const searchTab = window.open(url, 'sipacContractSearch');
+    if (!searchTab) {
+      showToast('O navegador bloqueou a nova aba. Permita a abertura e tente novamente.');
+      return;
+    }
+    rememberSipac(`SIPAC · Contrato ${number}/${year}`, url);
+    showToast('No SIPAC, clique em “Listar” para concluir a pesquisa do contrato.');
   }
 
   function anonymousDeviceId() {
