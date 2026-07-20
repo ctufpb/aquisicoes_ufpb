@@ -11,7 +11,7 @@
   <link rel="manifest" href="manifest.json" />
   <link rel="icon" href="icon-192.png?v=2" type="image/png" />
   <link rel="apple-touch-icon" href="icon-192.png?v=2" />
-  <link rel="stylesheet" href="style.css?v=1.0.3-process-layout" />
+  <link rel="stylesheet" href="style.css?v=1.0.3-process-dv99" />
 </head>
 <body>
   <div class="app-shell">
@@ -142,7 +142,7 @@
                   <label class="field sipac-process-fixed"><span>Radical</span><input value="23074" readonly aria-label="Radical fixo do processo" /></label>
                   <label class="field"><span>Número</span><input id="sipacProcessNumberInput" inputmode="numeric" value="058753" maxlength="6" placeholder="000000" autocomplete="off" /></label>
                   <label class="field sipac-process-year"><span>Ano</span><input id="sipacProcessYearInput" inputmode="numeric" value="2026" minlength="4" maxlength="4" pattern="[0-9]{4}" autocomplete="off" /></label>
-                  <label class="field sipac-process-verifier"><span>DV</span><input id="sipacProcessVerifierInput" inputmode="numeric" value="59" minlength="2" maxlength="2" pattern="[0-9]{2}" autocomplete="off" aria-label="Dígitos verificadores do processo" /></label>
+                  <label class="field sipac-process-fixed sipac-process-verifier"><span>DV</span><input value="99" readonly aria-label="Dígitos verificadores fixos do processo" /></label>
                 </div>
                 <div class="sipac-process-actions">
                   <a class="sipac-process-public" id="sipacProcessPublicBtn" href="#" target="_blank" rel="noopener noreferrer">SIPAC Público <span aria-hidden="true">🔎</span></a>
@@ -253,6 +253,6 @@
     </section>
   </div>
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
-  <script src="app.js?v=1.0.3-process-layout" defer></script>
+  <script src="app.js?v=1.0.3-process-dv99" defer></script>
 </body>
 </html>

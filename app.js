@@ -77,7 +77,6 @@
     sipacGuideYear: $('sipacGuideYearInput'),
     sipacProcessNumber: $('sipacProcessNumberInput'),
     sipacProcessYear: $('sipacProcessYearInput'),
-    sipacProcessVerifier: $('sipacProcessVerifierInput'),
     sipacAsset: $('sipacAssetInput'),
     transparencyUasg: $('transparencyUasgInput'),
     management: $('managementInput'),
@@ -137,7 +136,7 @@
     const normalized = [];
     for (const entry of entries) {
       const source = `${entry?.processNumber || ''} ${entry?.label || ''}`;
-      const processNumber = source.match(/23074\.\d{1,6}\/\d{4}-\d{2}/)?.[0] || '';
+      const processNumber = source.match(/23074\.\d{1,6}\/\d{4}-99/)?.[0] || '';
       const url = String(entry?.url || '').trim();
       if (!processNumber || !url || normalized.some(item => item.processNumber === processNumber)) continue;
       const accessMode = entry?.accessMode === 'logged' || /SIPAC Logado/i.test(String(entry?.label || '')) ? 'logged' : 'public';
@@ -167,9 +166,8 @@
   function normalizedSipacProcess() {
     const sequence = onlyDigits(fields.sipacProcessNumber.value).slice(0, 6);
     const year = onlyDigits(fields.sipacProcessYear.value).slice(0, 4);
-    const verifier = onlyDigits(fields.sipacProcessVerifier.value).slice(0, 2);
-    if (!sequence || year.length !== 4 || verifier.length !== 2) return '';
-    return `23074.${sequence.padStart(6, '0')}/${year}-${verifier}`;
+    if (!sequence || year.length !== 4) return '';
+    return `23074.${sequence.padStart(6, '0')}/${year}-99`;
   }
 
   function updateSipacProcessLinks() {
@@ -302,7 +300,6 @@
       sipacGuideYear: fields.sipacGuideYear.value,
       sipacProcessNumber: fields.sipacProcessNumber.value,
       sipacProcessYear: fields.sipacProcessYear.value,
-      sipacProcessVerifier: fields.sipacProcessVerifier.value,
       sipacAsset: onlyDigits(fields.sipacAsset.value),
       transparencyUasg: fields.transparencyUasg.value,
       management: fields.management.value,
@@ -999,11 +996,10 @@
     fields.sipacGuide.value = stored.sipacGuide || '123';
     fields.sipacGuideYear.value = stored.sipacGuideYear || DEFAULT_FORM_YEAR;
     const lastProcessStored = readStored(LAST_PROCESS_KEY, null);
-    const lastProcessValue = String(lastProcessStored?.processNumber || processRecent[0]?.processNumber || '23074.058753/2026-59');
-    const lastProcessMatch = lastProcessValue.match(/^23074\.(\d{1,6})\/(\d{4})-(\d{2})$/);
+    const lastProcessValue = String(lastProcessStored?.processNumber || processRecent[0]?.processNumber || '23074.058753/2026-99');
+    const lastProcessMatch = lastProcessValue.match(/^23074\.(\d{1,6})\/(\d{4})-99$/);
     fields.sipacProcessNumber.value = (lastProcessMatch?.[1] || '058753').padStart(6, '0').slice(0, 6);
     fields.sipacProcessYear.value = lastProcessMatch?.[2] || DEFAULT_FORM_YEAR;
-    fields.sipacProcessVerifier.value = lastProcessMatch?.[3] || '59';
     fields.sipacAsset.value = formatTombamento(stored.sipacAsset || '65164707');
     fields.transparencyUasg.value = stored.transparencyUasg || '153065';
     fields.management.value = stored.management || '15231';
@@ -1065,10 +1061,6 @@
       fields.sipacProcessNumber.value = onlyDigits(fields.sipacProcessNumber.value).slice(0, 6);
       update();
     });
-    fields.sipacProcessVerifier.addEventListener('input', () => {
-      fields.sipacProcessVerifier.value = onlyDigits(fields.sipacProcessVerifier.value).slice(0, 2);
-      update();
-    });
     fields.sipacAsset.addEventListener('input', () => {
       fields.sipacAsset.value = formatTombamento(fields.sipacAsset.value);
       update();
@@ -1102,7 +1094,7 @@
     bindEnter([fields.sipacCommitment, fields.sipacCommitmentYear], () => $('sipacCommitmentBtn').click());
     bindEnter([fields.sipacTerm, fields.sipacTermYear], () => $('sipacTermBtn').click());
     bindEnter([fields.sipacGuide, fields.sipacGuideYear], () => $('sipacGuideBtn').click());
-    bindEnter([fields.sipacProcessNumber, fields.sipacProcessYear, fields.sipacProcessVerifier], () => $('sipacProcessPublicBtn').click());
+    bindEnter([fields.sipacProcessNumber, fields.sipacProcessYear], () => $('sipacProcessPublicBtn').click());
     bindEnter([fields.sipacAsset], () => $('sipacAssetBtn').click());
     bindEnter([fields.transparencyUasg, fields.management, fields.transparencyYear, fields.commitment], () => {
       const record = uasgs.find(unit => unit.c === transparencyUasgCode());
@@ -1177,12 +1169,6 @@
         }
         if (!requireFourDigitYear(fields.sipacProcessYear)) {
           event.preventDefault();
-          return;
-        }
-        if (onlyDigits(fields.sipacProcessVerifier.value).length !== 2) {
-          event.preventDefault();
-          fields.sipacProcessVerifier.focus();
-          showToast('Informe os 2 dígitos verificadores do processo.');
           return;
         }
         const processNumber = normalizedSipacProcess();
