@@ -1,4 +1,4 @@
-const CACHE_NAME = 'consulta-aquisicoes-v1.0.3-sipac-window-target';
+const CACHE_NAME = 'consulta-aquisicoes-v1.0.3-sipac-public-contracts';
 const ASSETS = [
   './',
   './index.html',
@@ -11,7 +11,8 @@ const ASSETS = [
   './sipac-ufpb.webp',
   './portal-transparencia.webp',
   './pra-ufpb.png',
-  './uasgs.json'
+  './uasgs.json',
+  './sipac-contracts.json'
 ];
 
 self.addEventListener('install', event => {
