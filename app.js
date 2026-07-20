@@ -53,6 +53,7 @@
     sipacGuideYear: $('sipacGuideYearInput'),
     sipacProcessNumber: $('sipacProcessNumberInput'),
     sipacProcessYear: $('sipacProcessYearInput'),
+    sipacAsset: $('sipacAssetInput'),
     transparencyUasg: $('transparencyUasgInput'),
     management: $('managementInput'),
     transparencyYear: $('transparencyYearInput'),
@@ -95,6 +96,31 @@
         : '#';
       link.setAttribute('aria-disabled', String(!processNumber));
     }
+  }
+
+  function sipacAssetSearchUrl() {
+    const tombamento = onlyDigits(fields.sipacAsset.value).slice(0, 12);
+    if (!tombamento) return '';
+    const params = new URLSearchParams({
+      tipoRelatorio: '1',
+      view: 'consultaBens',
+      titulo: 'Consultar Bens',
+      infoBem: 'true',
+      opcoesBusca: '36',
+      tombamento,
+      consultar: 'true',
+      tipoOrdenacao: '1',
+      tipoAgrupamento: '6',
+      formatoSaida: '1'
+    });
+    return `https://sipac.ufpb.br/sipac/gerarRelatorioBens.do?${params.toString()}`;
+  }
+
+  function updateSipacAssetLink() {
+    const link = $('sipacAssetBtn');
+    const url = sipacAssetSearchUrl();
+    link.href = url || '#';
+    link.setAttribute('aria-disabled', String(!url));
   }
 
   function anonymousDeviceId() {
@@ -191,6 +217,7 @@
       sipacGuideYear: fields.sipacGuideYear.value,
       sipacProcessNumber: fields.sipacProcessNumber.value,
       sipacProcessYear: fields.sipacProcessYear.value,
+      sipacAsset: fields.sipacAsset.value,
       transparencyUasg: fields.transparencyUasg.value,
       management: fields.management.value,
       transparencyYear: fields.transparencyYear.value,
@@ -332,6 +359,7 @@
       $('noticeStatus').dataset.state = 'idle';
     }
     updateSipacProcessLinks();
+    updateSipacAssetLink();
     saveForm();
   }
 
@@ -781,6 +809,7 @@
     const storedSipacProcess = onlyDigits(stored.sipacProcess || '');
     fields.sipacProcessNumber.value = onlyDigits(stored.sipacProcessNumber || storedSipacProcess.slice(5, 11) || '058302').slice(0, 6);
     fields.sipacProcessYear.value = onlyDigits(stored.sipacProcessYear || storedSipacProcess.slice(11, 15) || DEFAULT_FORM_YEAR).slice(0, 4);
+    fields.sipacAsset.value = onlyDigits(stored.sipacAsset || '65164707').slice(0, 12);
     fields.transparencyUasg.value = stored.transparencyUasg || '153065';
     fields.management.value = stored.management || '15231';
     const restoredTransparencyUnit = uasgs.find(record => record.c === onlyDigits(fields.transparencyUasg.value));
@@ -841,6 +870,10 @@
       fields.sipacProcessNumber.value = onlyDigits(fields.sipacProcessNumber.value).slice(0, 6);
       update();
     });
+    fields.sipacAsset.addEventListener('input', () => {
+      fields.sipacAsset.value = onlyDigits(fields.sipacAsset.value).slice(0, 12);
+      update();
+    });
     fields.uasgInput.addEventListener('focus', renderSuggestions);
     fields.uasgInput.addEventListener('input', renderSuggestions);
     fields.uasgInput.addEventListener('blur', () => window.setTimeout(() => {
@@ -871,6 +904,7 @@
     bindEnter([fields.sipacTerm, fields.sipacTermYear], () => $('sipacTermBtn').click());
     bindEnter([fields.sipacGuide, fields.sipacGuideYear], () => $('sipacGuideBtn').click());
     bindEnter([fields.sipacProcessNumber, fields.sipacProcessYear], () => $('sipacProcessPublicBtn').click());
+    bindEnter([fields.sipacAsset], () => $('sipacAssetBtn').click());
     bindEnter([fields.transparencyUasg, fields.management, fields.transparencyYear, fields.commitment], () => {
       const record = uasgs.find(unit => unit.c === transparencyUasgCode());
       if (record) applyManagementForUnit(record);
@@ -956,6 +990,16 @@
         remember(`${accessLabel} · ${processNumber}`, event.currentTarget.href);
       });
     }
+    $('sipacAssetBtn').addEventListener('click', event => {
+      const tombamento = onlyDigits(fields.sipacAsset.value);
+      if (!tombamento) {
+        event.preventDefault();
+        fields.sipacAsset.focus();
+        showToast('Informe o número do tombamento.');
+        return;
+      }
+      remember(`SIPAC · Bem ${tombamento}`, event.currentTarget.href);
+    });
     $('transparencyBtn').addEventListener('click', () => {
       const uasg = transparencyUasgCode();
       const managementDigits = onlyDigits(fields.management.value);

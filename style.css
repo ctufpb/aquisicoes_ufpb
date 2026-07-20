@@ -248,6 +248,12 @@ h1, h2, h3, p { margin: 0; }
 .sipac-process-public:hover { border-color: #7bbcaf; background: #ddf1ec; }
 .sipac-process-logged { border-color: #bfd0e5; color: #315a83; background: #edf4fb; }
 .sipac-process-logged:hover { border-color: #91afd1; background: #e2eef9; }
+.sipac-asset-fields { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 11px; align-items: end; }
+.sipac-asset-fields .field { gap: 6px; }
+.sipac-asset-fields input { min-height: 54px; }
+.sipac-asset-fields > a { display: inline-flex; min-height: 54px; align-items: center; justify-content: center; gap: 8px; padding: 0 17px; border: 1px solid #b9d2cb; border-radius: 11px; color: var(--brand-strong); background: #f2f9f7; font-size: 0.92rem; font-weight: 850; white-space: nowrap; transition: transform 0.15s ease, background 0.15s ease, border-color 0.15s ease; }
+.sipac-asset-fields > a:hover { transform: translateY(-1px); border-color: #7bbcaf; background: #e7f5f1; }
+.sipac-asset-fields > a[aria-disabled="true"] { opacity: 0.52; }
 .inline-fields { display: grid; grid-template-columns: minmax(0, 1fr) 96px auto; gap: 11px; align-items: end; }
 .inline-fields .field { gap: 6px; }
 .inline-fields input { min-height: 54px; }
@@ -371,6 +377,10 @@ h1, h2, h3, p { margin: 0; }
   .sipac-process-parts input { min-height: 46px; padding: 0 5px; font-size: 0.82rem; }
   .sipac-process-actions { gap: 7px; }
   .sipac-process-actions a { min-height: 46px; padding: 0 7px; gap: 5px; font-size: 0.72rem; }
+  .sipac-asset-fields { grid-template-columns: minmax(0, 1fr) 126px; gap: 7px; }
+  .sipac-asset-fields .field { gap: 5px; font-size: 0.72rem; }
+  .sipac-asset-fields input { min-height: 48px; padding: 0 9px; font-size: 0.92rem; }
+  .sipac-asset-fields > a { min-height: 48px; padding: 0 8px; gap: 5px; font-size: 0.72rem; }
   .inline-fields { grid-template-columns: minmax(0, 1fr) 68px 60px; gap: 7px; }
   .inline-fields .field { gap: 5px; font-size: 0.72rem; }
   .inline-fields .long-field-label { font-size: 0.62rem; letter-spacing: -0.02em; white-space: nowrap; }
