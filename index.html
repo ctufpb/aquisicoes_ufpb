@@ -111,6 +111,31 @@
               <img src="sipac-ufpb.webp" alt="Universidade Federal da Paraíba — SIPAC" />
             </div>
             <div class="tool-card-body">
+              <div class="inline-fields">
+                <label class="field"><span>Requisição</span><input id="sipacRequestInput" inputmode="numeric" value="123" /></label>
+                <label class="field year-field"><span>Ano</span><input id="sipacYearInput" inputmode="numeric" value="2026" minlength="4" maxlength="4" pattern="[0-9]{4}" /></label>
+                <button id="sipacRequestBtn" type="button">Abrir <span>🔎</span></button>
+              </div>
+              <div class="inline-fields">
+                <label class="field"><span>Empenho</span><input id="sipacCommitmentInput" inputmode="numeric" value="1234" /></label>
+                <label class="field year-field"><span>Ano</span><input id="sipacCommitmentYearInput" inputmode="numeric" value="2026" minlength="4" maxlength="4" pattern="[0-9]{4}" aria-describedby="sipacCommitmentAdvisory" /></label>
+                <button id="sipacCommitmentBtn" type="button">Abrir <span>🔎</span></button>
+              </div>
+              <p class="year-advisory" id="sipacCommitmentAdvisory" hidden></p>
+              <div class="sipac-asset-fields">
+                <label class="field"><span>Tombamento</span><input id="sipacAssetInput" inputmode="numeric" value="65164707" maxlength="12" placeholder="Número do tombamento" autocomplete="off" /></label>
+                <a id="sipacAssetBtn" href="#" target="_blank" rel="noopener noreferrer">Consultar bem <span aria-hidden="true">🔎</span></a>
+              </div>
+              <div class="inline-fields">
+                <label class="field"><span class="long-field-label">Termo de responsabilidade</span><input id="sipacTermInput" inputmode="numeric" value="123" /></label>
+                <label class="field year-field"><span>Ano</span><input id="sipacTermYearInput" inputmode="numeric" value="2026" minlength="4" maxlength="4" pattern="[0-9]{4}" /></label>
+                <button id="sipacTermBtn" type="button">Abrir <span>🔎</span></button>
+              </div>
+              <div class="inline-fields">
+                <label class="field"><span class="long-field-label">Guia de movimentação</span><input id="sipacGuideInput" inputmode="numeric" value="123" /></label>
+                <label class="field year-field"><span>Ano</span><input id="sipacGuideYearInput" inputmode="numeric" value="2026" minlength="4" maxlength="4" pattern="[0-9]{4}" /></label>
+                <button id="sipacGuideBtn" type="button">Abrir <span>🔎</span></button>
+              </div>
               <div class="sipac-process-tool">
                 <span class="sipac-process-title">Consulta processual</span>
                 <div class="sipac-process-parts">
@@ -123,31 +148,6 @@
                   <a class="sipac-process-public" id="sipacProcessPublicBtn" href="#" target="_blank" rel="noopener noreferrer">SIPAC Público <span aria-hidden="true">🔎</span></a>
                   <a class="sipac-process-logged" id="sipacProcessLoggedBtn" href="#" target="_blank" rel="noopener noreferrer">SIPAC Logado <span aria-hidden="true">🔐</span></a>
                 </div>
-              </div>
-              <div class="sipac-asset-fields">
-                <label class="field"><span>Tombamento</span><input id="sipacAssetInput" inputmode="numeric" value="65164707" maxlength="12" placeholder="Número do tombamento" autocomplete="off" /></label>
-                <a id="sipacAssetBtn" href="#" target="_blank" rel="noopener noreferrer">Consultar bem <span aria-hidden="true">🔎</span></a>
-              </div>
-              <div class="inline-fields">
-                <label class="field"><span>Requisição</span><input id="sipacRequestInput" inputmode="numeric" value="123" /></label>
-                <label class="field year-field"><span>Ano</span><input id="sipacYearInput" inputmode="numeric" value="2026" minlength="4" maxlength="4" pattern="[0-9]{4}" /></label>
-                <button id="sipacRequestBtn" type="button">Abrir <span>🔎</span></button>
-              </div>
-              <div class="inline-fields">
-                <label class="field"><span>Empenho</span><input id="sipacCommitmentInput" inputmode="numeric" value="1234" /></label>
-                <label class="field year-field"><span>Ano</span><input id="sipacCommitmentYearInput" inputmode="numeric" value="2026" minlength="4" maxlength="4" pattern="[0-9]{4}" aria-describedby="sipacCommitmentAdvisory" /></label>
-                <button id="sipacCommitmentBtn" type="button">Abrir <span>🔎</span></button>
-              </div>
-              <p class="year-advisory" id="sipacCommitmentAdvisory" hidden></p>
-              <div class="inline-fields">
-                <label class="field"><span class="long-field-label">Termo de responsabilidade</span><input id="sipacTermInput" inputmode="numeric" value="123" /></label>
-                <label class="field year-field"><span>Ano</span><input id="sipacTermYearInput" inputmode="numeric" value="2026" minlength="4" maxlength="4" pattern="[0-9]{4}" /></label>
-                <button id="sipacTermBtn" type="button">Abrir <span>🔎</span></button>
-              </div>
-              <div class="inline-fields">
-                <label class="field"><span class="long-field-label">Guia de movimentação</span><input id="sipacGuideInput" inputmode="numeric" value="123" /></label>
-                <label class="field year-field"><span>Ano</span><input id="sipacGuideYearInput" inputmode="numeric" value="2026" minlength="4" maxlength="4" pattern="[0-9]{4}" /></label>
-                <button id="sipacGuideBtn" type="button">Abrir <span>🔎</span></button>
               </div>
             </div>
           </article>
