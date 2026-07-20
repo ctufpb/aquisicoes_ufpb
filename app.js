@@ -71,6 +71,8 @@
     sipacYear: $('sipacYearInput'),
     sipacCommitment: $('sipacCommitmentInput'),
     sipacCommitmentYear: $('sipacCommitmentYearInput'),
+    sipacContract: $('sipacContractInput'),
+    sipacContractYear: $('sipacContractYearInput'),
     sipacTerm: $('sipacTermInput'),
     sipacTermYear: $('sipacTermYearInput'),
     sipacGuide: $('sipacGuideInput'),
@@ -87,6 +89,7 @@
     fields.year,
     fields.sipacYear,
     fields.sipacCommitmentYear,
+    fields.sipacContractYear,
     fields.sipacTermYear,
     fields.sipacGuideYear,
     fields.sipacProcessYear,
@@ -294,6 +297,8 @@
       sipacYear: fields.sipacYear.value,
       sipacCommitment: fields.sipacCommitment.value,
       sipacCommitmentYear: fields.sipacCommitmentYear.value,
+      sipacContract: fields.sipacContract.value,
+      sipacContractYear: fields.sipacContractYear.value,
       sipacTerm: fields.sipacTerm.value,
       sipacTermYear: fields.sipacTermYear.value,
       sipacGuide: fields.sipacGuide.value,
@@ -663,9 +668,12 @@
       number.textContent = entry.processNumber;
       const access = document.createElement('small');
       access.textContent = entry.accessLabel;
+      const separator = document.createElement('span');
+      separator.className = 'process-history-separator';
+      separator.textContent = '—';
       const details = document.createElement('span');
       details.className = 'process-history-details';
-      details.append(number, access);
+      details.append(number, separator, access);
       const search = document.createElement('b');
       search.className = 'process-history-search';
       search.textContent = '🔎';
@@ -991,6 +999,8 @@
     fields.sipacYear.value = stored.sipacYear || DEFAULT_FORM_YEAR;
     fields.sipacCommitment.value = stored.sipacCommitment || '1234';
     fields.sipacCommitmentYear.value = stored.sipacCommitmentYear || DEFAULT_FORM_YEAR;
+    fields.sipacContract.value = stored.sipacContract || '1';
+    fields.sipacContractYear.value = stored.sipacContractYear || DEFAULT_FORM_YEAR;
     fields.sipacTerm.value = stored.sipacTerm || '123';
     fields.sipacTermYear.value = stored.sipacTermYear || DEFAULT_FORM_YEAR;
     fields.sipacGuide.value = stored.sipacGuide || '123';
@@ -1057,6 +1067,7 @@
     fields.item.addEventListener('input', () => { fields.item.value = onlyDigits(fields.item.value).slice(0, 5); update(); });
     fields.management.addEventListener('input', () => { fields.management.value = onlyDigits(fields.management.value).slice(0, 5); update(); });
     fields.commitment.addEventListener('input', () => { fields.commitment.value = onlyDigits(fields.commitment.value).slice(0, 6); update(); });
+    fields.sipacContract.addEventListener('input', () => { fields.sipacContract.value = onlyDigits(fields.sipacContract.value).slice(0, 6); update(); });
     fields.sipacProcessNumber.addEventListener('input', () => {
       fields.sipacProcessNumber.value = onlyDigits(fields.sipacProcessNumber.value).slice(0, 6);
       update();
@@ -1092,6 +1103,7 @@
     });
     bindEnter([fields.sipacRequest, fields.sipacYear], () => $('sipacRequestBtn').click());
     bindEnter([fields.sipacCommitment, fields.sipacCommitmentYear], () => $('sipacCommitmentBtn').click());
+    bindEnter([fields.sipacContract, fields.sipacContractYear], () => $('sipacContractBtn').click());
     bindEnter([fields.sipacTerm, fields.sipacTermYear], () => $('sipacTermBtn').click());
     bindEnter([fields.sipacGuide, fields.sipacGuideYear], () => $('sipacGuideBtn').click());
     bindEnter([fields.sipacProcessNumber, fields.sipacProcessYear], () => $('sipacProcessPublicBtn').click());
@@ -1139,6 +1151,18 @@
       const year = requireFourDigitYear(fields.sipacCommitmentYear);
       if (!year) return;
       openUrl(number && year ? `https://sipac.ufpb.br/sipac/consultaEmpenho.do?numero=${number}&ano=${year}&idUnidadeGestora=605&acao=13` : '', `SIPAC · Empenho ${number}/${year}`, 'sipac');
+    });
+    $('sipacContractBtn').addEventListener('click', () => {
+      const number = onlyDigits(fields.sipacContract.value);
+      const year = requireFourDigitYear(fields.sipacContractYear);
+      if (!year) return;
+      if (!number) {
+        fields.sipacContract.focus();
+        showToast('Informe o número do contrato.');
+        return;
+      }
+      const url = `https://sipac.ufpb.br/sipac/buscaContrato.do?contrato.numero=${number}&contrato.ano=${year}&externo=false`;
+      openUrl(url, `SIPAC · Contrato ${number}/${year}`, 'sipac');
     });
     $('sipacTermBtn').addEventListener('click', () => {
       const number = onlyDigits(fields.sipacTerm.value);

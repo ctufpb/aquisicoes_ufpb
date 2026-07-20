@@ -239,22 +239,24 @@ h1, h2, h3, p { margin: 0; }
 .local-history-list > button span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .local-history-list b { color: var(--brand); }
 .empty-history { padding: 10px 2px; color: var(--muted); font-size: 0.76rem; font-weight: 650; line-height: 1.4; }
-.process-history-row { display: grid; grid-template-columns: minmax(0, 1fr) 46px; min-height: 56px; overflow: hidden; border: 1px solid rgba(207, 222, 217, 0.9); border-radius: 11px; background: rgba(255, 255, 255, 0.92); }
-.process-history-open { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 10px; min-width: 0; padding: 9px 12px; color: var(--ink); }
+.process-history-row { display: grid; grid-template-columns: minmax(0, 1fr) 44px; min-height: 46px; overflow: hidden; border: 1px solid rgba(207, 222, 217, 0.9); border-radius: 11px; background: rgba(255, 255, 255, 0.92); }
+.process-history-open { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 8px; min-width: 0; padding: 7px 10px; color: var(--ink); }
 .process-history-open:hover { color: var(--brand-strong); background: #f8fbfa; }
-.process-history-details { display: grid; gap: 2px; min-width: 0; }
-.process-history-open strong { overflow: hidden; font-size: 0.92rem; font-variant-numeric: tabular-nums; text-overflow: ellipsis; white-space: nowrap; }
-.process-history-open small { color: var(--muted); font-size: 0.74rem; font-weight: 720; }
+.process-history-details { display: flex; align-items: center; gap: 5px; min-width: 0; overflow: hidden; white-space: nowrap; }
+.process-history-open strong { overflow: hidden; font-size: 0.88rem; font-variant-numeric: tabular-nums; text-overflow: ellipsis; white-space: nowrap; }
+.process-history-separator { flex: 0 0 auto; color: #8a9893; font-size: 0.78rem; font-weight: 750; }
+.process-history-open small { flex: 0 0 auto; color: var(--muted); font-size: 0.76rem; font-weight: 720; }
 .process-history-search { color: var(--brand); font-size: 0.92rem; }
-.process-history-row .favorite-button { width: 46px; font-size: 1.3rem; }
+.process-history-row .favorite-button { width: 44px; font-size: 1.22rem; }
 .service-art { position: relative; height: 132px; overflow: hidden; border-bottom: 1px solid var(--line); background: #f5f8fb; }
 .service-art::after { content: ""; position: absolute; inset: auto 0 0; height: 28%; background: linear-gradient(transparent, rgba(10, 33, 62, 0.05)); pointer-events: none; }
 .service-art img { display: block; width: 100%; height: 100%; object-fit: cover; }
 .tool-card-body { display: grid; align-content: start; gap: 17px; padding: 23px; }
 .tool-card .field { font-size: 1.02rem; }
 .tool-card .field input { font-size: 1.15rem; }
+.sipac-process-block { display: grid; gap: 6px; }
 .sipac-process-tool { display: grid; gap: 9px; padding: 13px; border: 1px solid #c8dcd6; border-radius: 13px; background: linear-gradient(135deg, #f7fbfa, #eef7f4); }
-.sipac-process-title { color: var(--ink); font-size: 0.9rem; font-weight: 850; }
+.sipac-process-title { color: #44544f; font-size: 1.02rem; font-weight: 850; }
 .sipac-process-parts { display: grid; grid-template-columns: 84px minmax(0, 1fr) 92px 58px; gap: 8px; align-items: end; }
 .sipac-process-parts .field { gap: 5px; min-width: 0; font-size: 0.74rem; }
 .sipac-process-parts input { width: 100%; min-height: 52px; padding: 0 9px; font-size: 1rem; font-variant-numeric: tabular-nums; letter-spacing: 0.015em; text-align: center; }
@@ -411,7 +413,11 @@ h1, h2, h3, p { margin: 0; }
   .legacy-actions button { font-size: 0.94rem; }
   .tool-card-body { gap: 13px; padding: 18px 16px; }
   .sipac-process-tool { padding: 11px; }
-  .sipac-process-title { font-size: 0.82rem; }
+  .sipac-process-title { font-size: 0.72rem; }
+  .process-history-open { gap: 5px; padding: 6px 8px; }
+  .process-history-details { gap: 4px; }
+  .process-history-open strong { font-size: 0.76rem; }
+  .process-history-open small { font-size: 0.69rem; }
   .sipac-process-parts { grid-template-columns: 64px minmax(0, 1fr) 72px 48px; gap: 6px; }
   .sipac-process-parts .field { gap: 4px; font-size: 0.63rem; }
   .sipac-process-parts input { min-height: 46px; padding: 0 5px; font-size: 0.82rem; }
