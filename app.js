@@ -451,8 +451,7 @@
     modeYearAdvisory.hidden = !modeYearMessage;
     modeYearAdvisory.textContent = modeYearMessage;
     const transparencyYear = isFourDigitYear(fields.transparencyYear.value) ? fields.transparencyYear.value : '';
-    const managementPreview = onlyDigits(fields.management.value);
-    $('transparencyPreview').textContent = `UASG ${transparencyUasg || '—'} · Gestão ${managementPreview ? managementPreview.padStart(5, '0') : '—'} · ${transparencyYear || '—'}NE${onlyDigits(fields.commitment.value).padStart(6, '0')}`;
+    $('transparencyPreview').textContent = `${transparencyYear || '—'}NE${onlyDigits(fields.commitment.value).padStart(6, '0')}`;
     const historicalMessage = 'Atenção: para anos até 2020, confira também a faixa histórica 800001–999999. O Empenho Web passou a estruturar esses dados a partir de 2021.';
     const sipacHistorical = isFourDigitYear(fields.sipacCommitmentYear.value) && Number(fields.sipacCommitmentYear.value) < EMPENHO_WEB_START_YEAR;
     const transparencyHistorical = isFourDigitYear(fields.transparencyYear.value) && Number(fields.transparencyYear.value) < EMPENHO_WEB_START_YEAR;

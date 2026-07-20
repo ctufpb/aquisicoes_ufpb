@@ -11,7 +11,7 @@
   <link rel="manifest" href="manifest.json" />
   <link rel="icon" href="icon-192.png?v=2" type="image/png" />
   <link rel="apple-touch-icon" href="icon-192.png?v=2" />
-  <link rel="stylesheet" href="style.css?v=1.0.3-sipac-contracts" />
+  <link rel="stylesheet" href="style.css?v=1.0.3-transparency-compact" />
 </head>
 <body>
   <div class="app-shell">
@@ -190,13 +190,15 @@
                     <span class="search-glyph" aria-hidden="true">🔎</span>
                     <div class="suggestions" id="transparencyUasgSuggestions" role="listbox" hidden></div>
                   </div>
-                  <small class="field-help" id="transparencyUasgHelp">Carregando base de UASGs…</small>
                 </label>
                 <label class="field management-field"><span>Gestão</span><input id="managementInput" inputmode="numeric" value="15231" maxlength="5" /></label>
                 <label class="field transparency-year-field"><span>Ano</span><input id="transparencyYearInput" inputmode="numeric" value="2026" minlength="4" maxlength="4" pattern="[0-9]{4}" aria-describedby="transparencyYearAdvisory" /></label>
                 <label class="field commitment-field"><span>Empenho</span><input id="commitmentInput" inputmode="numeric" value="1234" maxlength="6" aria-describedby="transparencyPreview" /></label>
                 <button class="wide-tool-button" id="transparencyBtn" type="button">Consultar empenho <span>🔎</span></button>
-                <small class="field-help transparency-preview" id="transparencyPreview"></small>
+                <div class="transparency-meta">
+                  <small class="field-help" id="transparencyUasgHelp">Carregando base de UASGs…</small>
+                  <small class="field-help transparency-preview" id="transparencyPreview"></small>
+                </div>
               </div>
               <p class="year-advisory" id="transparencyYearAdvisory" hidden></p>
             </div>
@@ -260,6 +262,6 @@
     </section>
   </div>
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
-  <script src="app.js?v=1.0.3-sipac-contracts" defer></script>
+  <script src="app.js?v=1.0.3-transparency-compact" defer></script>
 </body>
 </html>
