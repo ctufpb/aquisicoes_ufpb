@@ -1,4 +1,4 @@
-const CACHE_NAME = 'consulta-aquisicoes-v1.0.3-sipac-get-sequence';
+const CACHE_NAME = 'consulta-aquisicoes-v1.0.3-sipac-window-target';
 const ASSETS = [
   './',
   './index.html',

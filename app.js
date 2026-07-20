@@ -222,11 +222,10 @@
     rememberSipac(`SIPAC · Bem ${formatTombamento(tombamento)}`, resultUrl);
     showToast('Preparando a consulta no SIPAC…');
     window.setTimeout(() => {
-      if (searchTab.closed) {
-        showToast('A aba do SIPAC foi fechada antes da consulta.');
-        return;
+      const resultTab = window.open(resultUrl, 'sipacAssetSearch');
+      if (!resultTab) {
+        showToast('Volte ao app e toque novamente em “Consultar bem”.');
       }
-      searchTab.location = resultUrl;
     }, 2400);
   }
 
